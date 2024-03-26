@@ -1,5 +1,6 @@
 from qibo import hamiltonians
-from qibo.symbols import X, Z
+from qibo.symbols import Z
+import numpy as np
 
 class quadratic_problem:
     def __init__(self, Qdict, offset = 0):
@@ -8,6 +9,9 @@ class quadratic_problem:
         """
         self.Qdict = Qdict
         self.offset = offset
+        self.n = 0
+        for key in Qdict:
+            self.n = max([self.n, key[0], key[1]])
 
 
     def __init__(self, h, J, offset):
@@ -50,6 +54,7 @@ class quadratic_problem:
         """
         # the linear biases are the easiest
         self.Qdict = {(v, v): 2. * bias for v, bias in h.items()}
+        self.n = 0
 
         # next the quadratic biases
         for (u, v), bias in self.Qdict.items():
@@ -58,9 +63,11 @@ class quadratic_problem:
             self.Qdict[(u, v)] = 4. * bias
             self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2. * bias
             self.Qdict[(v, v)] = self.Qdict.setdefault((v, v), 0) - 2. * bias
+            self.n = max([self.n, u, v])
 
         # finally calculate the offset
         self.offset += sum(J.values()) - sum(h.values())
+
 
 
     def multiply_scalar(self, scalar_multiplier):
@@ -81,6 +88,7 @@ class quadratic_problem:
                 self.Qdict[key] += other_Quadratic[key]
             else:
                 self.Qdict[key] - other_Quadratic[key]
+        self.n = max(self.n, other_Quadratic.n)
 
     def qubo_to_ising(self, constant = 0.0):
         """Convert a QUBO problem to an Ising problem.
@@ -167,5 +175,35 @@ class quadratic_problem:
         symbolic_ham += constant
         ham = hamiltonians.SymbolicHamiltonian(symbolic_ham)
         return ham
+
+    def evaluate_f(self, x):
+        f_value = 0
+        for i in range(self.n):
+            if x[i] != 0:
+                # manage diagonal term first
+                f_value += self.Qdict[(i,i)]
+                for j in range(i+1, self.n):
+                    if x[j] != 0:
+                        f_value += self.Qdict[(i,j)] + self.Qdict[(j,i)]
+        return f_value
+
+
+    def evaluate_grad_f(self, x):
+        """
+        :param x:
+        :return: grad, the corresponding gradient
+        """
+        grad = np.asarray([self.Qdict[(i,i)] for i in range(self.n)])
+        for i in range(self.n):
+            for j in range(self.n):
+                if x[j] == 1:
+                    grad[i] += self.Qdict[(i,j)]
+        return grad
+
+
+
+
+
+
 
 
