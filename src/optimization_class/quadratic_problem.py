@@ -18,7 +18,7 @@ class quadratic_problem:
         """
         Convert an Ising problem to a QUBO problem.
 
-        Map an Ising model defined on spins (variables with {-1, +1} values) to quadratic
+        Map an Ising model defined on spins (variables with {-1, +1} values) to optimization_class
         unconstrained binary optimization (QUBO) formulation :math:`x'  Q  x` defined over
         binary variables (0 or 1 values), where the linear term is contained along the diagonal of Q.
         Return matrix Q that defines the model as well as the offset in energy between the two
@@ -34,7 +34,7 @@ class quadratic_problem:
                 the model and values are biases.
             J (dict[(variable, variable), bias]):
                Quadratic biases as a dict of the form {(u, v): bias, ...}, where keys
-               are 2-tuples of variables of the model and values are quadratic biases
+               are 2-tuples of variables of the model and values are optimization_class biases
                associated with the pair of variables (the interaction).
             offset (numeric, optional, default=0):
                 Constant offset to be applied to the energy. Default 0.
@@ -56,7 +56,7 @@ class quadratic_problem:
         self.Qdict = {(v, v): 2. * bias for v, bias in h.items()}
         self.n = 0
 
-        # next the quadratic biases
+        # next the optimization_class biases
         for (u, v), bias in self.Qdict.items():
             if bias == 0.0:
                 continue
@@ -72,16 +72,16 @@ class quadratic_problem:
 
     def multiply_scalar(self, scalar_multiplier):
         """
-        :param scalar: this is the scalar that we want to multiply the quadratic function to
-        :return: None, just updating the quadratic function
+        :param scalar: this is the scalar that we want to multiply the optimization_class function to
+        :return: None, just updating the optimization_class function
         """
         for key, value in self.Qdict:
             self.Qdict *= scalar_multiplier
 
     def __add__(self, other_Quadratic):
         """
-        :param other_Quadratic: another quadratic class object
-        :return: updating the quadratic function to obtain the sum
+        :param other_Quadratic: another optimization_class class object
+        :return: updating the optimization_class function to obtain the sum
         """
         for key, value in other_Quadratic:
             if key in self.Qdict:
@@ -93,7 +93,7 @@ class quadratic_problem:
     def qubo_to_ising(self, constant = 0.0):
         """Convert a QUBO problem to an Ising problem.
 
-        Map a quadratic unconstrained binary optimization (QUBO) problem  defined over binary variables
+        Map a optimization_class unconstrained binary optimization (QUBO) problem  defined over binary variables
         (0 or 1 values), where the linear term is contained along x' Qx
         the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
         Return h and J that define the Ising model as well as the offset in energy
