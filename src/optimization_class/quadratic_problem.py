@@ -200,6 +200,54 @@ class quadratic_problem:
                     grad[i] += self.Qdict[(i,j)]
         return grad
 
+class linear_problem:
+    def __init__(self, A, b):
+        """
+        :param A: A is a numpy matrix
+        """
+        self.A = A
+        self.b = b
+        self.n = b.len
+
+
+    def multiply_scalar(self, scalar_multiplier):
+        """
+        :param scalar: this is the scalar that we want to multiply the optimization_class function to
+        :return: None, just updating the optimization_class function
+        """
+        self.A *=scalar_multiplier
+        self.b *= scalar_multiplier
+
+    def __add__(self, other_linear):
+        """
+        :param other_Quadratic: another optimization_class class object
+        :return: updating the optimization_class function to obtain the sum
+        """
+        self.A += other_linear.A
+        self.b += other_linear.b
+
+
+    def evaluate_f(self, x):
+        return self.A @ x + self.b
+
+
+    def square(self):
+        '''
+        if we square a linear term, we should obtain a QUBO
+        ||Ax+b||^2 = (Ax+b)^T(Ax+b) =x^TA^TAx =+ 2b^TAx + b^Tb
+        =X^T(A^TA - diag(A^TA))x + (diag(A^TA)+2b^TA)x + b^Tb
+        :return: a QUBO object
+        '''
+        quadraticpart = self.A.T @ self.A + np.diag(2 * (self.b@self.A))
+        offset = np.dot(self.b, self.b)
+        num_rows, num_cols = quadraticpart.shape
+        Qdict = dict()
+        for i in range(num_rows):
+            for j in range(num_cols):
+                Qdict[(i,j)] = quadraticpart[i,j]
+        return quadraticpart(Qdict, offset)
+
+
 
 
 
