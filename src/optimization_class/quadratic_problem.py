@@ -200,6 +200,48 @@ class quadratic_problem:
                     grad[i] += self.Qdict[(i,j)]
         return grad
 
+    def tabu_search(self, max_iterations=100, tabu_size=10):
+        """
+        Perform tabu search to find a minimizer for a QUBO problem.
+
+        Args:
+        - max_iterations (int): Maximum number of iterations to perform.
+        - tabu_size (int): Size of the tabu list.
+
+        Returns:
+        - numpy.array: Binary vector representing the minimizer found.
+        - float: Objective value of the minimizer found.
+        """
+        x = np.random.randint(2, size=self.n)  # Initial solution
+        best_solution = x.copy()
+        best_obj_value = self.evaluate_f(x)
+        tabu_list = []
+
+        for _ in range(max_iterations):
+            neighbors = []
+            for i in range(self.n):
+                neighbor = x.copy()
+                neighbor[i] = 1 - neighbor[i]  # Flip a bit
+                neighbors.append((neighbor, self.evaluate_f(neighbor)))
+
+            # Choose the best neighbor that is not tabu
+            best_neighbor = min(neighbors, key=lambda x: x[1])
+            best_neighbor_solution, best_neighbor_obj = best_neighbor
+
+            # Update the current solution if it's better than the previous best and not tabu
+            if best_neighbor_obj < best_obj_value and best_neighbor_solution.tolist() not in tabu_list:
+                x = best_neighbor_solution
+                best_solution = x.copy()
+                best_obj_value = best_neighbor_obj
+
+            # Add the best neighbor to the tabu list
+            tabu_list.append(best_neighbor_solution.tolist())
+            if len(tabu_list) > tabu_size:
+                tabu_list.pop(0)
+
+        return best_solution, best_obj_value
+
+
 class linear_problem:
     def __init__(self, A, b):
         """
