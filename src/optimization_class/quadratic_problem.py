@@ -1,6 +1,7 @@
 from qibo import hamiltonians
 from qibo.symbols import Z
 import numpy as np
+import itertools
 
 class quadratic_problem:
     def __init__(self, Qdict, offset = 0):
@@ -241,11 +242,34 @@ class quadratic_problem:
 
         return best_solution, best_obj_value
 
+    def brute_force(self):
+        # this is to solve the QUBO in a brute force fashion for benchmarking purpose.
+        # note that this approach is very slow.
+        possible_values = {}
+        # A list of all the possible permutations for x vector
+        vec_permutations = itertools.product([0, 1], repeat=self.n)
+
+        for permutation in vec_permutations:
+            x = np.array(
+                [[var] for var in permutation]
+            )  # Converts the permutation into a column vector
+            value = self.evaluate_f(x)
+            possible_values[
+                value[0][0]
+            ] = x  # Adds the value and its vector to the dictionary
+
+        min_value = min(possible_values.keys())  # Lowest value of the objective function
+        opt_vector = tuple(
+            possible_values[min_value].T[0]
+        )  # Optimum vector x that produces the lowest value
+
+        return opt_vector, min_value
+
 
 class linear_problem:
     def __init__(self, A, b):
         """
-        :param A: A is a numpy matrix
+        :param A: A is a numpy matrix, possibly a row vector
         """
         self.A = A
         self.b = b
