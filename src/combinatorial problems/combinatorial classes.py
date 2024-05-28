@@ -4,7 +4,7 @@ from qibo import gates
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from ..optimization_class.quadratic_problem import quadratic_problem, linear_problem
+from ..optimization_class.optimization_class import quadratic_problem, linear_problem
 
 
 def calculate_two_to_one(num_cities):
