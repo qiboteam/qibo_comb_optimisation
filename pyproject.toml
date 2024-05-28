@@ -7,9 +7,29 @@ license = "Apache-2.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.9,<3.12"
 qibo = ">=0.2.0"
+docs = "^0.1.0"
+
+[tool.poetry.group.analysis.dependencies]
+pylint = "^3.2.2"
+
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^8.2.1"
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.3.7"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks]
+test = "pytest"
+lint = "pylint src --errors-only"
+lint-warnings = "pylint src --exit-zero"
+docs = "make -C doc html"
+docs-clean = "make -C doc clean"
+test-docs = "make -C doc doctest"
