@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "qibocomboptimisation"
+version = "0.1.0"
+description = "higher-level application developments for acombinatorial optimisation problems"
+authors = ["The Qibo team"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+qibo = ">=0.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

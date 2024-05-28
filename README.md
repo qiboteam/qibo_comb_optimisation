@@ -1,2 +1,0 @@
-# qiboopt
-Optimization tools
