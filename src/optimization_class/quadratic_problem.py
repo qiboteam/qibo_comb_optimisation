@@ -4,30 +4,14 @@ import numpy as np
 import itertools
 
 class quadratic_problem:
-    def __init__(self, Qdict, offset = 0):
+    def __init__(self, offset, *args):
         """
-        :param Qdict: Qdict is a dictionary encoding a QUBO
-        """
-        self.Qdict = Qdict
-        self.offset = offset
-        self.n = 0
-        for key in Qdict:
-            self.n = max([self.n, key[0], key[1]])
+        :param args: this can either be a dictionary or h and J for typical ising formulation
+        :param offset: an integer
 
+                .. math::
 
-    def __init__(self, h, J, offset):
-        """
-        Convert an Ising problem to a QUBO problem.
-
-        Map an Ising model defined on spins (variables with {-1, +1} values) to optimization_class
-        unconstrained binary optimization (QUBO) formulation :math:`x'  Q  x` defined over
-        binary variables (0 or 1 values), where the linear term is contained along the diagonal of Q.
-        Return matrix Q that defines the model as well as the offset in energy between the two
-        problem formulations:
-
-        .. math::
-
-             s'  J  s + h'  s = offset + x'  Q
+             s'  J  s + h'  s = offset + x'  Q x
 
         Args:
             h (dict[variable, bias]):
@@ -39,36 +23,33 @@ class quadratic_problem:
                associated with the pair of variables (the interaction).
             offset (numeric, optional, default=0):
                 Constant offset to be applied to the energy. Default 0.
-
-        Returns:
-            (dict, float): A 2-tuple containing:
-
-                dict: QUBO coefficients.
-
-                float: New energy offset.
-
-        Examples:
-            This example converts an Ising problem of two variables that have positive
-            biases of value 1 and are positively coupled with an interaction of value 1
-            to a QUBO problem and prints the resulting energy offset.
-
         """
-        # the linear biases are the easiest
-        self.Qdict = {(v, v): 2. * bias for v, bias in h.items()}
-        self.n = 0
 
-        # next the optimization_class biases
-        for (u, v), bias in self.Qdict.items():
-            if bias == 0.0:
-                continue
-            self.Qdict[(u, v)] = 4. * bias
-            self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2. * bias
-            self.Qdict[(v, v)] = self.Qdict.setdefault((v, v), 0) - 2. * bias
-            self.n = max([self.n, u, v])
 
-        # finally calculate the offset
-        self.offset += sum(J.values()) - sum(h.values())
+        self.offset = offset
+        if len(args) == 1 and isinstance(args[0], dict):
+            self.Qdict = args[0]
+            self.n = 0
+            for key in self.Qdict:
+                self.n = max([self.n, key[0], key[1]])
+            self.n += 1
+        else:
+            h = args[0]
+            J = args[1]
+            self.Qdict = {(v, v): 2. * bias for v, bias in h.items()}
+            self.n = 0
 
+            # next the optimization_class biases
+            for (u, v), bias in self.Qdict.items():
+                if bias == 0.0:
+                    continue
+                self.Qdict[(u, v)] = 4. * bias
+                self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2. * bias
+                self.Qdict[(v, v)] = self.Qdict.setdefault((v, v), 0) - 2. * bias
+                self.n = max([self.n, u, v])
+            self.n += 1
+            # finally adjust the offset based on QUBO definitions rather than Ising formulation
+            self.offset += sum(args.values()) - sum(h.values())
 
 
     def multiply_scalar(self, scalar_multiplier):
@@ -76,20 +57,22 @@ class quadratic_problem:
         :param scalar: this is the scalar that we want to multiply the optimization_class function to
         :return: None, just updating the optimization_class function
         """
-        for key, value in self.Qdict:
-            self.Qdict *= scalar_multiplier
+        for key in self.Qdict:
+            self.Qdict[key] *= scalar_multiplier
+        self.offset *= scalar_multiplier
 
     def __add__(self, other_Quadratic):
         """
         :param other_Quadratic: another optimization_class class object
         :return: updating the optimization_class function to obtain the sum
         """
-        for key, value in other_Quadratic:
+        for key in other_Quadratic.Qdict:
             if key in self.Qdict:
-                self.Qdict[key] += other_Quadratic[key]
+                self.Qdict[key] += other_Quadratic.Qdict[key]
             else:
-                self.Qdict[key] - other_Quadratic[key]
+                self.Qdict[key] = other_Quadratic.Qdict[key]
         self.n = max(self.n, other_Quadratic.n)
+        self.offset += other_Quadratic.offset
 
     def qubo_to_ising(self, constant = 0.0):
         """Convert a QUBO problem to an Ising problem.
@@ -137,7 +120,7 @@ class quadratic_problem:
         for (u, v), bias in self.Qdict.items():
             if u == v:
                 if u in h:
-                    h[u] +=  bias/2
+                    h[u] += bias/2
                 else:
                     h[u] = bias/2
                 linear_offset += bias
@@ -178,14 +161,15 @@ class quadratic_problem:
         return ham
 
     def evaluate_f(self, x):
-        f_value = 0
+        f_value = self.offset
         for i in range(self.n):
             if x[i] != 0:
                 # manage diagonal term first
-                f_value += self.Qdict[(i,i)]
-                for j in range(i+1, self.n):
-                    if x[j] != 0:
-                        f_value += self.Qdict[(i,j)] + self.Qdict[(j,i)]
+                if (i,i) in self.Qdict:
+                    f_value += self.Qdict[(i,i)]
+                    for j in range(i+1, self.n):
+                        if x[j] != 0:
+                            f_value += self.Qdict.get((i,j),0) + self.Qdict.get((j,i),0)
         return f_value
 
 
@@ -194,11 +178,11 @@ class quadratic_problem:
         :param x:
         :return: grad, the corresponding gradient
         """
-        grad = np.asarray([self.Qdict[(i,i)] for i in range(self.n)])
+        grad = np.asarray([self.Qdict.get((i,i),0) for i in range(self.n)])
         for i in range(self.n):
             for j in range(self.n):
-                if x[j] == 1:
-                    grad[i] += self.Qdict[(i,j)]
+                if j != i and x[j] == 1:
+                    grad[i] += self.Qdict.get((i,j),0) + self.Qdict.get((j,i),0)
         return grad
 
     def tabu_search(self, max_iterations=100, tabu_size=10):
@@ -254,9 +238,7 @@ class quadratic_problem:
                 [[var] for var in permutation]
             )  # Converts the permutation into a column vector
             value = self.evaluate_f(x)
-            possible_values[
-                value[0][0]
-            ] = x  # Adds the value and its vector to the dictionary
+            possible_values[value] = x  # Adds the value and its vector to the dictionary
 
         min_value = min(possible_values.keys())  # Lowest value of the objective function
         opt_vector = tuple(
@@ -312,9 +294,6 @@ class linear_problem:
             for j in range(num_cols):
                 Qdict[(i,j)] = quadraticpart[i,j]
         return quadraticpart(Qdict, offset)
-
-
-
 
 
 
