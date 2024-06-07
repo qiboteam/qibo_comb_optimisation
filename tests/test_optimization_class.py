@@ -1,6 +1,7 @@
-import pytest
 import numpy as np
-from src.optimization_class.optimization_class import quadratic_problem, linear_problem
+import pytest
+
+from src.optimization_class.quadratic_problem import linear_problem, quadratic_problem
 
 
 # Test initialization of the quadratic_problem class
@@ -79,3 +80,55 @@ def test_brute_force():
 
     assert len(opt_vector) == 2
     assert isinstance(min_value, float)
+
+
+def test_linear_initialization():
+    A = np.array([[1, 2], [3, 4]])
+    b = np.array([5, 6])
+    lp = linear_problem(A, b)
+    assert np.array_equal(lp.A, A)
+    assert np.array_equal(lp.b, b)
+    assert lp.n == 2
+
+
+def test_linear_multiply_scalar():
+    A = np.array([[1, 2], [3, 4]])
+    b = np.array([5, 6])
+    lp = linear_problem(A, b)
+    lp.multiply_scalar(2)
+    assert np.array_equal(lp.A, np.array([[2, 4], [6, 8]]))
+    assert np.array_equal(lp.b, np.array([10, 12]))
+
+
+def test_linear_addition():
+    A1 = np.array([[1, 2], [3, 4]])
+    b1 = np.array([5, 6])
+    lp1 = linear_problem(A1, b1)
+    A2 = np.array([[1, 1], [1, 1]])
+    b2 = np.array([1, 1])
+    lp2 = linear_problem(A2, b2)
+    lp1 + lp2
+    assert np.array_equal(lp1.A, np.array([[2, 3], [4, 5]]))
+    assert np.array_equal(lp1.b, np.array([6, 7]))
+
+
+def test_linear_evaluate_f():
+    A = np.array([[1, 2], [3, 4]])
+    b = np.array([5, 6])
+    lp = linear_problem(A, b)
+    x = np.array([1, 1])
+    result = lp.evaluate_f(x)
+    assert np.array_equal(result, np.array([8, 13]))
+
+
+def test_linear_square():
+    A = np.array([[1, 2], [3, 4]])
+    b = np.array([5, 6])
+    lp = linear_problem(A, b)
+    Quadratic = lp.square()
+    Qdict = Quadratic.Qdict
+    offset = Quadratic.offset
+    expected_Qdict = {(0, 0): 56, (0, 1): 14, (1, 0): 14, (1, 1): 88}
+    expected_offset = 61
+    assert Qdict == expected_Qdict
+    assert offset == expected_offset
