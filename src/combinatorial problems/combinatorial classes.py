@@ -57,9 +57,11 @@ def tsp_mixer(num_cities, backend=None):
 class TSP:
     """
     The travelling salesman problem (also called the travelling salesperson problem or TSP)
-    asks the following question: "Given a list of cities and the distances between each pair of cities,
-    what is the shortest possible route for a salesman to visit each city exactly once and return to the origin city?"
-    It is an NP-hard problem in combinatorial optimization. It is also important in theoretical computer science and
+    asks the following question: "Given a list of cities and the distances between each pair
+    of cities,what is the shortest possible route for a salesman to visit each city exactly
+    once and return to the origin city?"
+    It is an NP-hard problem in combinatorial optimization.
+    It is also important in theoretical computer science and
     operations research.
 
     This is a TSP class that enables us to implement TSP according to
@@ -90,7 +92,8 @@ class TSP:
                 for i in range(m):
                     if cauchy[i] == 0:
                         cauchy = cauchy[i:] + cauchy[:i]
-                        return tuple(cauchy)  # now, the cauchy notation for permutation begins with 0
+                        return tuple(cauchy)
+                        # now, the cauchy notation for permutation begins with 0
 
 
             def evaluate_dist(cauchy):
@@ -104,9 +107,9 @@ class TSP:
 
             def qaoa_function_of_layer(layer, distance_matrix):
                 '''
-                This is a function to study the impact of the number of layers on QAOA, it takes
-                in the number of layers and compute the distance of the mode of the histogram obtained
-                from QAOA
+                This is a function to study the impact of the number of layers on QAOA,
+                it takes in the number of layers and compute the distance of the mode
+                of the histogram obtained from QAOA
 
                 '''
                 small_tsp = TSP(distance_matrix)
@@ -118,7 +121,8 @@ class TSP:
                 quantum_state = qaoa.execute(initial_state)
                 circuit = Circuit(9)
                 circuit.add(gates.M(*range(9)))
-                result = CircuitResult(quantum_state, circuit.measurements, small_tsp.backend, nshots=1000)
+                result = CircuitResult(quantum_state, circuit.measurements,
+                        small_tsp.backend, nshots=1000)
                 freq_counter = result.frequencies()
                 # let's combine freq_counter here, first convert each key and sum up the frequency
                 cauchy_dict = defaultdict(int)
@@ -162,7 +166,8 @@ class TSP:
 
     def prepare_initial_state(self, ordering):
         """
-        To run QAOA by Hadsfield, we need to start from a valid permutation function to ensure feasibility.
+        To run QAOA by Hadsfield, we need to start from a valid
+        permutation function to ensure feasibility.
 
         Args:
             ordering (array): A list describing permutation from 0 to n-1
@@ -215,7 +220,7 @@ class TSP:
         return qp
 
 
-class MIS:
+class mis:
     def __init__(self, G):
         """
 
@@ -223,13 +228,13 @@ class MIS:
         :param G:  A networkx object
         :return: a QUBO representation
         """
-        self.G = G
+        self.g = G
         self.n = G.number_of_nodes
 
     def penalty_method(self, penalty):
-        Q_dict = dict()
+        q_dict = {}
         for i in range(self.n):
-            Q_dict[(i, i)] = -1
-        for u, v in self.G.edge:
-            Q_dict[(u, v)] = penalty
-        return quadratic_problem(Q_dict)
+            q_dict[(i, i)] = -1
+        for u, v in self.g.edge:
+            q_dict[(u, v)] = penalty
+        return quadratic_problem(q_dict)
