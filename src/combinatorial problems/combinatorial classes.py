@@ -182,20 +182,21 @@ class TSP:
         return: a TSP QUBO object that is constructed based on penalty method
         """
         Q_dict = dict()
-        for u in range(self.n):
-            for v in range(self.n):
+        for u in range(self.num_cities):
+            for v in range(self.num_cities):
                 if v != u:
-                    for j in range(self.n):
+                    for j in range(self.num_cities):
                         # this is the objective function
                         Q_dict[
-                            self.two_to_one[u, j], self.two_to_one[v, (j + 1) % (n + 1)]
+                            self.two_to_one[u, j],
+                            self.two_to_one[v, (j + 1) % (self.num_cities + 1)],
                         ] = self.distance_matrix[u, v]
         qp = quadratic_problem(Q_dict)
         # row constraints
 
-        for v in range(self.n):
-            row_constrait = [0 for _ in range(self.n**2)]
-            for j in range(self.n):
+        for v in range(self.num_cities):
+            row_constrait = [0 for _ in range(self.num_cities**2)]
+            for j in range(self.num_cities):
                 row_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(row_constrait, -1)
             tmp_qp = lp.square()
@@ -203,9 +204,9 @@ class TSP:
             qp = qp + tmp_qp
 
         # column constraints
-        for j in range(self.n):
-            col_constrait = [0 for _ in range(self.n**2)]
-            for j in range(self.n):
+        for j in range(self.num_cities):
+            col_constrait = [0 for _ in range(self.num_cities**2)]
+            for v in range(self.num_cities):
                 col_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(col_constrait, -1)
             tmp_qp = lp.square()
