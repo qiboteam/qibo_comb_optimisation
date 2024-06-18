@@ -1,10 +1,10 @@
 import numpy as np
-
 from qibo import gates
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from ..optimization_class.optimization_class import quadratic_problem, linear_problem
+
+from ..optimization_class.quadratic_problem import linear_problem, quadratic_problem
 
 
 def calculate_two_to_one(num_cities):
@@ -178,7 +178,7 @@ class TSP:
         return result.state()
 
     def penalty_method(self, penalty):
-        """"
+        """ "
         return: a TSP QUBO object that is constructed based on penalty method
         """
         Q_dict = dict()
@@ -187,7 +187,9 @@ class TSP:
                 if v != u:
                     for j in range(self.n):
                         # this is the objective function
-                        Q_dict[self.two_to_one[u,j], self.two_to_one[v,(j+1) %(n+1)]] = self.distance_matrix[u,v]
+                        Q_dict[
+                            self.two_to_one[u, j], self.two_to_one[v, (j + 1) % (n + 1)]
+                        ] = self.distance_matrix[u, v]
         qp = quadratic_problem(Q_dict)
         # row constraints
 
@@ -197,7 +199,7 @@ class TSP:
                 row_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(row_constrait, -1)
             tmp_qp = lp.square()
-            tmp_qp =tmp_qp.multiply_scalar(penalty)
+            tmp_qp = tmp_qp.multiply_scalar(penalty)
             qp = qp + tmp_qp
 
         # column constraints
@@ -207,10 +209,9 @@ class TSP:
                 col_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(col_constrait, -1)
             tmp_qp = lp.square()
-            tmp_qp =tmp_qp.multiply_scalar(penalty)
+            tmp_qp = tmp_qp.multiply_scalar(penalty)
             qp = qp + tmp_qp
         return qp
-
 
 
 class MIS:
@@ -227,10 +228,7 @@ class MIS:
     def penalty_method(self, penalty):
         Q_dict = dict()
         for i in range(self.n):
-            Q_dict[(i,i)] = -1
+            Q_dict[(i, i)] = -1
         for u, v in self.G.edge:
-            Q_dict[(u,v)] = penalty
+            Q_dict[(u, v)] = penalty
         return quadratic_problem(Q_dict)
-
-
-
