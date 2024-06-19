@@ -8,8 +8,7 @@ from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-
-from ..optimization_class.quadratic_problem import linear_problem, quadratic_problem
+from optimization_class.quadratic_problem import linear_problem, quadratic_problem
 
 
 def calculate_two_to_one(num_cities):
@@ -243,7 +242,7 @@ class TSP:
                 row_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(row_constrait, -1)
             tmp_qp = lp.square()
-            tmp_qp = tmp_qp.multiply_scalar(penalty)
+            tmp_qp.multiply_scalar(penalty)
             qp = qp + tmp_qp
 
         # column constraints
@@ -253,7 +252,7 @@ class TSP:
                 col_constrait[self.two_to_one(v, j)] = 1
             lp = linear_problem(col_constrait, -1)
             tmp_qp = lp.square()
-            tmp_qp = tmp_qp.multiply_scalar(penalty)
+            tmp_qp.multiply_scalar(penalty)
             qp = qp + tmp_qp
         return qp
 
