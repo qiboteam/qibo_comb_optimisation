@@ -1,5 +1,10 @@
+"""
+This module comprises of various applications that are commonly formulated in QUBO formulations.
+"""
+
 import numpy as np
 from qibo import gates
+from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
@@ -16,6 +21,14 @@ def calculate_two_to_one(num_cities):
 
 
 def tsp_phaser(distance_matrix, backend=None):
+    """
+    Args:
+        distance_matrix: this is a numpy matrix
+        backend: backend to be specified
+
+    Returns: The phaser hamiltonian for TSP
+
+    """
     num_cities = distance_matrix.shape[0]
     two_to_one = calculate_two_to_one(num_cities)
     form = 0
@@ -33,9 +46,35 @@ def tsp_phaser(distance_matrix, backend=None):
 
 
 def tsp_mixer(num_cities, backend=None):
+    """
+
+    Args:
+        num_cities: The number of cities
+        backend: Backend to be specified
+
+    Returns: TSP mixer
+
+    """
     two_to_one = calculate_two_to_one(num_cities)
-    splus = lambda u, i: X(int(two_to_one[u, i])) + 1j * Y(int(two_to_one[u, i]))
-    sminus = lambda u, i: X(int(two_to_one[u, i])) - 1j * Y(int(two_to_one[u, i]))
+
+    def splus(u, i):
+        """
+        Args:
+            u: index for cities
+            i: index for positions
+        Returns: Splus hamiltonian
+        """
+        return X(int(two_to_one[u, i])) + 1j * Y(int(two_to_one[u, i]))
+
+    def sminus(u, i):
+        """
+        Args:
+            u: index for cities
+            i: index for positions
+        Returns: Splus hamiltonian
+        """
+        return X(int(two_to_one[u, i])) - 1j * Y(int(two_to_one[u, i]))
+
     form = 0
     for i in range(num_cities):
         for u in range(num_cities):
@@ -144,8 +183,6 @@ class TSP:
     """
 
     def __init__(self, distance_matrix, backend=None):
-        from qibo.backends import _check_backend
-
         self.backend = _check_backend(backend)
 
         self.distance_matrix = distance_matrix
@@ -176,8 +213,9 @@ class TSP:
             An initial state that is used to start TSP QAOA.
 
         """
-        c = Circuit(len(ordering) ** 2)
-        for i in range(len(ordering)):
+        n = len(ordering)
+        c = Circuit(n**2)
+        for i in range(n):
             c.add(gates.X(int(self.two_to_one[ordering[i], i])))
         result = self.backend.execute_circuit(c)
         return result.state()
@@ -186,17 +224,17 @@ class TSP:
         """ "
         return: a TSP QUBO object that is constructed based on penalty method
         """
-        Q_dict = dict()
+        q_dict = {}
         for u in range(self.num_cities):
             for v in range(self.num_cities):
                 if v != u:
                     for j in range(self.num_cities):
                         # this is the objective function
-                        Q_dict[
+                        q_dict[
                             self.two_to_one[u, j],
                             self.two_to_one[v, (j + 1) % (self.num_cities + 1)],
                         ] = self.distance_matrix[u, v]
-        qp = quadratic_problem(Q_dict)
+        qp = quadratic_problem(q_dict)
         # row constraints
 
         for v in range(self.num_cities):
@@ -220,21 +258,37 @@ class TSP:
         return qp
 
 
-class mis:
-    def __init__(self, G):
+class Mis:
+    """
+    mis (maximal independent set) is a popular combinatorial optimization problem,
+    this module helps to prepare the hamiltonian so that the user can use Qibo to
+    explore combnatorial problem easily
+    """
+
+    def __init__(self, g):
         """
 
         :param self:
-        :param G:  A networkx object
+        :param g:  A networkx object
         :return: a QUBO representation
         """
-        self.g = G
-        self.n = G.number_of_nodes
+        self.g = g
+        self.n = g.number_of_nodes
 
     def penalty_method(self, penalty):
+        """
+        Args:
+            penalty: Penalty parameter for MIS
+
+        Returns: A hamiltonian correspondng to the penalty method for mis
+
+        """
         q_dict = {}
         for i in range(self.n):
             q_dict[(i, i)] = -1
         for u, v in self.g.edge:
             q_dict[(u, v)] = penalty
         return quadratic_problem(q_dict)
+
+    def __str__(self):
+        return self.__class__.__name__
