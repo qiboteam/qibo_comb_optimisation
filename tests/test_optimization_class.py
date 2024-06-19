@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.optimization_class.quadratic_problem import linear_problem, quadratic_problem
+from optimization_class.quadratic_problem import linear_problem, quadratic_problem
 
 
 # Test initialization of the quadratic_problem class

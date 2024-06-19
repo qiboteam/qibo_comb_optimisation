@@ -26,6 +26,11 @@ sphinx = "^7.3.7"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
 [tool.poe.tasks]
 test = "pytest"
 lint = "pylint src --errors-only"
