@@ -278,6 +278,7 @@ class linear_problem:
         """
         self.A += other_linear.A
         self.b += other_linear.b
+        return self
 
     def evaluate_f(self, x):
         return self.A @ x + self.b
