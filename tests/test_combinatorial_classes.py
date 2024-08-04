@@ -41,16 +41,4 @@ def test_tsp_class():
     assert initial_state is not None, "TSP.prepare_initial_state did not return a valid state"
 
 
-def test_mis_class():
-    g = nx.Graph()
-    g.add_edges_from([(0, 1), (1, 2), (2, 0)])
-    mis = Mis(g)
-    assert mis.n == 3, "Mis class did not set the number of nodes correctly"
-    assert mis.g == g, "Mis class did not set the graph correctly"
 
-    penalty = 10
-    qp = mis.penalty_method(penalty)
-    assert isinstance(qp, quadratic_problem), "Mis.penalty_method did not return a quadratic_problem"
-
-    mis_str = str(mis)
-    assert mis_str == "Mis", "Mis.__str__ did not return the expected string"

@@ -272,7 +272,7 @@ class Mis:
         :return: a QUBO representation
         """
         self.g = g
-        self.n = g.number_of_nodes
+        self.n = g.number_of_nodes()
 
     def penalty_method(self, penalty):
         """
@@ -285,9 +285,10 @@ class Mis:
         q_dict = {}
         for i in range(self.n):
             q_dict[(i, i)] = -1
-        for u, v in self.g.edge:
+        for u, v in self.g.edges:
             q_dict[(u, v)] = penalty
         return quadratic_problem(q_dict)
 
     def __str__(self):
         return self.__class__.__name__
+
