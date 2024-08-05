@@ -27,8 +27,14 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "src"
+testpaths = ['tests/']
+filterwarnings = ['ignore::RuntimeWarning']
+addopts = [
+  '--cov=qibo',
+  '--cov-append',
+  '--cov-report=xml',
+  '--cov-report=html',
+  '--durations=60',
 ]
 
 [tool.poe.tasks]
@@ -38,3 +44,5 @@ lint-warnings = "pylint src --exit-zero"
 docs = "make -C doc html"
 docs-clean = "make -C doc clean"
 test-docs = "make -C doc doctest"
+
+
