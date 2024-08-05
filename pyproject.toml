@@ -17,7 +17,7 @@ pylint = "^3.2.2"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
-
+pytest-cov = "^4.0.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.3.7"
@@ -44,5 +44,6 @@ lint-warnings = "pylint src --exit-zero"
 docs = "make -C doc html"
 docs-clean = "make -C doc clean"
 test-docs = "make -C doc doctest"
+
 
 
