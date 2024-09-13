@@ -5,6 +5,8 @@ description = "higher-level application developments for acombinatorial optimisa
 authors = ["The Qibo team"]
 license = "Apache-2.0"
 readme = "README.md"
+packages = [{include="qibocomboptimisation", from="src"}]
+
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
