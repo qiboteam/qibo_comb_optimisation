@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "qibo_comb_optimisation"
 version = "0.1.0"
-description = "higher-level application developments for acombinatorial optimisation problems"
+description = "higher-level application developments for combinatorial optimisation problems"
 authors = ["The Qibo team"]
 license = "Apache-2.0"
 readme = "README.md"
