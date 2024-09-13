@@ -12,6 +12,7 @@ packages = [{include="qibocomboptimisation", from="src"}]
 python = ">=3.9,<3.12"
 qibo = ">=0.2.0"
 docs = "^0.1.0"
+qibojit = "^0.1.5"
 
 [tool.poetry.group.analysis.dependencies]
 pylint = "^3.2.2"
