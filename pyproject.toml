@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "qibocomboptimisation"
+name = "qibo_comb_optimisation"
 version = "0.1.0"
 description = "higher-level application developments for acombinatorial optimisation problems"
 authors = ["The Qibo team"]
