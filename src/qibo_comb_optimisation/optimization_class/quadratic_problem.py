@@ -28,8 +28,6 @@ class quadratic_problem:
         """
 
         self.offset = offset
-        print(len(args))
-        print(isinstance(args[0], dict))
         if len(args) == 1 and isinstance(args[0], dict):
             self.Qdict = args[0]
             self.n = 0
@@ -52,7 +50,7 @@ class quadratic_problem:
                 self.n = max([self.n, u, v])
             self.n += 1
             # finally adjust the offset based on QUBO definitions rather than Ising formulation
-            self.offset += sum(args.values()) - sum(h.values())
+            self.offset += sum(J.values()) - sum(h.values())
 
     def multiply_scalar(self, scalar_multiplier):
         """
@@ -154,8 +152,8 @@ class quadratic_problem:
         :return: a symbolic hamiltonian that corresponds to the QUBO
         """
         h, J, constant = self.Qdict.qubo_to_ising(self.Qdict)
-        symbolic_ham = sum(h[i] * Z[i] for i in h)
-        symbolic_ham += sum(J[u, v] * Z[u] * Z[v] for (u, v) in J)
+        symbolic_ham = sum(h[i] * Z(i) for i in h)
+        symbolic_ham += sum(J[u, v] * Z(u) * Z(v) for (u, v) in J)
         symbolic_ham += constant
         ham = hamiltonians.SymbolicHamiltonian(symbolic_ham)
         return ham
