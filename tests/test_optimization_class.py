@@ -1,5 +1,5 @@
 import numpy as np
-from src.qibo_comb_optimisation.optimization_class.quadratic_problem import quadratic_problem, linear_problem
+from src.qibo_comb_optimisation.optimization_class.optimization_class import quadratic_problem, linear_problem
 
 
 # Test initialization of the quadratic_problem class

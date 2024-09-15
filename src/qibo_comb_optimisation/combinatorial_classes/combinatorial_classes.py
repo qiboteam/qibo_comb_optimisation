@@ -8,7 +8,7 @@ from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from src.qibo_comb_optimisation.optimization_class.quadratic_problem import linear_problem, quadratic_problem
+from src.qibo_comb_optimisation.optimization_class.optimization_class import linear_problem, quadratic_problem
 
 
 def calculate_two_to_one(num_cities):
