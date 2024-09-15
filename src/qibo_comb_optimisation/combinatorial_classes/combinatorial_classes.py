@@ -1,5 +1,5 @@
 """
-This module comprises of various applications that are commonly formulated in QUBO formulations.
+This module comprises of various combinatorial optimization applications that are commonly formulated in QUBO formulations.
 """
 
 import numpy as np
@@ -13,20 +13,27 @@ from src.qibo_comb_optimisation.optimization_class.optimization_class import lin
 
 def calculate_two_to_one(num_cities):
     """
-    :param num_cities: number of cities for TSP
-    :return: a 2 by 2 numpy matrix encoding the mapping from two coordinate to one cooedinate
+    Calculates a mapping from two coordinates to one coordinate for the TSP problem.
+
+    Args:
+        num_cities (int): The number of cities for the TSP.
+
+    Returns:
+        np.ndarray: A 2D array mapping two coordinates to one.
     """
     return np.arange(num_cities**2).reshape(num_cities, num_cities)
 
 
 def tsp_phaser(distance_matrix, backend=None):
     """
+    Constructs the phaser Hamiltonian for the Traveling Salesman Problem (TSP).
+
     Args:
-        distance_matrix: this is a numpy matrix
-        backend: backend to be specified
+        distance_matrix (np.ndarray): A matrix representing the distances between cities.
+        backend: Backend to be used for the calculations (optional).
 
-    Returns: The phaser hamiltonian for TSP
-
+    Returns:
+        SymbolicHamiltonian: The phaser Hamiltonian for TSP.
     """
     num_cities = distance_matrix.shape[0]
     two_to_one = calculate_two_to_one(num_cities)
@@ -46,31 +53,41 @@ def tsp_phaser(distance_matrix, backend=None):
 
 def tsp_mixer(num_cities, backend=None):
     """
+    Constructs the mixer Hamiltonian for the Traveling Salesman Problem (TSP).
 
     Args:
-        num_cities: The number of cities
-        backend: Backend to be specified
+        num_cities (int): The number of cities in the TSP.
+        backend: Backend to be used for the calculations (optional).
 
-    Returns: TSP mixer
-
+    Returns:
+        SymbolicHamiltonian: The mixer Hamiltonian for TSP.
     """
+
     two_to_one = calculate_two_to_one(num_cities)
 
     def splus(u, i):
         """
+        Defines the S+ operator for a specific city and position.
+
         Args:
-            u: index for cities
-            i: index for positions
-        Returns: Splus hamiltonian
+            u (int): City index.
+            i (int): Position index.
+
+        Returns:
+            SymbolicHamiltonian: The S+ operator.
         """
         return X(int(two_to_one[u, i])) + 1j * Y(int(two_to_one[u, i]))
 
     def sminus(u, i):
         """
+        Defines the S- operator for a specific city and position.
+
         Args:
-            u: index for cities
-            i: index for positions
-        Returns: Splus hamiltonian
+            u (int): City index.
+            i (int): Position index.
+
+        Returns:
+            SymbolicHamiltonian: The S- operator.
         """
         return X(int(two_to_one[u, i])) - 1j * Y(int(two_to_one[u, i]))
 
@@ -190,10 +207,10 @@ class TSP:
 
     def hamiltonians(self):
         """
-        Returns:
-            The pair of Hamiltonian describes the phaser hamiltonian
-            and the mixer hamiltonian.
+        Constructs the phaser and mixer Hamiltonians for the TSP.
 
+        Returns:
+            tuple: A tuple containing the phaser and mixer Hamiltonians.
         """
         return (
             tsp_phaser(self.distance_matrix, backend=self.backend),
@@ -202,15 +219,13 @@ class TSP:
 
     def prepare_initial_state(self, ordering):
         """
-        To run QAOA by Hadsfield, we need to start from a valid
-        permutation function to ensure feasibility.
+        Prepares a valid initial state for TSP QAOA based on the given city ordering.
 
         Args:
-            ordering (array): A list describing permutation from 0 to n-1
+            ordering (list): A list representing the permutation of cities.
 
         Returns:
-            An initial state that is used to start TSP QAOA.
-
+            array: The quantum state representing the initial solution.
         """
         n = len(ordering)
         c = Circuit(n**2)
@@ -220,8 +235,14 @@ class TSP:
         return result.state()
 
     def penalty_method(self, penalty):
-        """ "
-        return: a TSP QUBO object that is constructed based on penalty method
+        """
+        Constructs the TSP QUBO object using a penalty method for feasibility.
+
+        Args:
+            penalty (float): The penalty parameter for constraint violations.
+
+        Returns:
+            quadratic_problem: A QUBO object for the TSP with penalties applied.
         """
         q_dict = {}
         for u in range(self.num_cities):
@@ -259,9 +280,24 @@ class TSP:
 
 class Mis:
     """
-    mis (maximal independent set) is a popular combinatorial optimization problem,
-    this module helps to prepare the hamiltonian so that the user can use Qibo to
-    explore combnatorial problem easily
+    Class for representing the Maximal Independent Set (MIS) problem.
+
+    The MIS problem involves selecting the largest subset of non-adjacent vertices in a graph.
+
+    Args:
+        g (networkx.Graph): A graph object representing the problem.
+
+    Example:
+        .. testcode::
+
+            import networkx as nx
+            from qibo.models.combinatorial_classes import Mis
+
+            g = nx.Graph()
+            g.add_edges_from([(0, 1), (1, 2), (2, 0)])
+            mis = Mis(g)
+            penalty = 10
+            qp = mis.penalty_method(penalty)
     """
 
     def __init__(self, g):
@@ -276,11 +312,13 @@ class Mis:
 
     def penalty_method(self, penalty):
         """
+        Constructs the QUBO Hamiltonian for the MIS problem using a penalty method.
+
         Args:
-            penalty: Penalty parameter for MIS
+            penalty (float): The penalty parameter for constraint violations.
 
-        Returns: A hamiltonian correspondng to the penalty method for mis
-
+        Returns:
+            quadratic_problem: A QUBO object for the MIS problem.
         """
         q_dict = {}
         for i in range(self.n):
