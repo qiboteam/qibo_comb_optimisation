@@ -15,9 +15,7 @@ def test_initialization():
 def test_multiply_scalar():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
     qp = quadratic_problem(0, Qdict)
-
     qp.multiply_scalar(2)
-
     assert qp.Qdict == {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
 
 
