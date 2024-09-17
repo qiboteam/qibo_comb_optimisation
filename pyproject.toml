@@ -1,15 +1,18 @@
 [tool.poetry]
-name = "qibocomboptimisation"
+name = "qibo_comb_optimisation"
 version = "0.1.0"
-description = "higher-level application developments for acombinatorial optimisation problems"
+description = "higher-level application developments for combinatorial optimisation problems"
 authors = ["The Qibo team"]
 license = "Apache-2.0"
 readme = "README.md"
+packages = [{include="qibo_comb_optimisation", from="src"}]
+
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
 qibo = ">=0.2.0"
 docs = "^0.1.0"
+qibojit = "^0.1.5"
 
 [tool.poetry.group.analysis.dependencies]
 pylint = "^3.2.2"
@@ -17,7 +20,7 @@ pylint = "^3.2.2"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
-
+pytest-cov = "^4.0.0"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.3.7"
@@ -27,8 +30,14 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-pythonpath = [
-  "src"
+testpaths = ['tests/']
+filterwarnings = ['ignore::RuntimeWarning']
+addopts = [
+  '--cov=qibo_comb_optimisation',
+  '--cov-append',
+  '--cov-report=xml',
+  '--cov-report=html',
+  '--durations=60',
 ]
 
 [tool.poe.tasks]
@@ -38,3 +47,6 @@ lint-warnings = "pylint src --exit-zero"
 docs = "make -C doc html"
 docs-clean = "make -C doc clean"
 test-docs = "make -C doc doctest"
+
+
+

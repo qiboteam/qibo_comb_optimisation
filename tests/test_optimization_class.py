@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
-
-from optimization_class.quadratic_problem import linear_problem, quadratic_problem
+from qibo_comb_optimisation.optimization_class.optimization_class import quadratic_problem, linear_problem
 
 
 # Test initialization of the quadratic_problem class
@@ -17,9 +15,7 @@ def test_initialization():
 def test_multiply_scalar():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
     qp = quadratic_problem(0, Qdict)
-
     qp.multiply_scalar(2)
-
     assert qp.Qdict == {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
 
 
