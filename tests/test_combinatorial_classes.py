@@ -45,7 +45,6 @@ def test_mis_class():
     g = nx.Graph()
     g.add_edges_from([(0, 1), (1, 2), (2, 0)])
     mis = Mis(g)
-    print(mis.n)
     assert mis.n == 3, "Mis class did not set the number of nodes correctly"
     assert mis.g == g, "Mis class did not set the graph correctly"
 

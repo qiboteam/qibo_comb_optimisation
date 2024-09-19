@@ -8,7 +8,7 @@ from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from src.qibo_comb_optimisation.optimization_class.optimization_class import linear_problem, quadratic_problem
+from qibo_comb_optimisation.optimization_class.optimization_class import linear_problem, quadratic_problem
 
 
 def calculate_two_to_one(num_cities):
@@ -325,19 +325,9 @@ class Mis:
             q_dict[(i, i)] = -1
         for u, v in self.g.edges:
             q_dict[(u, v)] = penalty
-        print(q_dict)
         return quadratic_problem(0, q_dict)
 
     def __str__(self):
         return self.__class__.__name__
 
-import networkx as nx
-g = nx.Graph()
-g.add_edges_from([(0, 1), (1, 2), (2, 0)])
-mis = Mis(g)
-print(mis.n)
-
-penalty = 10
-qp = mis.penalty_method(penalty)
-print(type(qp))
 
