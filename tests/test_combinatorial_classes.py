@@ -41,6 +41,53 @@ def test_tsp_class():
     assert initial_state is not None, "TSP.prepare_initial_state did not return a valid state"
 
 
+def run_tests():
+    # Test Setup
+    num_cities = 4
+    distance_matrix = [
+        [0, 10, 15, 20],
+        [10, 0, 35, 25],
+        [15, 35, 0, 30],
+        [20, 25, 30, 0]
+    ]
+    two_to_one = lambda u, j: u * num_cities + j  # Example two_to_one mapping
+    tsp = TSP(num_cities, distance_matrix, two_to_one)  # Assuming TSP class exists
+
+    # Test 1: Basic functionality with a moderate penalty value
+    penalty = 1.0
+    qp = tsp.penalty_method(penalty)
+    assert isinstance(qp, quadratic_problem), "Test 1 Failed: Returned object is not a quadratic_problem."
+    assert len(qp.q_dict) > 0, "Test 1 Failed: QUBO dictionary is empty."
+
+    # Test 2: Zero penalty
+    penalty = 0.0
+    qp = tsp.penalty_method(penalty)
+    for key, value in qp.q_dict.items():
+        expected_value = distance_matrix[key[0] // num_cities][key[1] // num_cities]
+        assert value == expected_value, f"Test 2 Failed: Expected {expected_value} but got {value} for key {key}."
+
+    # Test 3: High penalty
+    penalty = 1000.0
+    qp = tsp.penalty_method(penalty)
+    for key, value in qp.q_dict.items():
+        assert abs(value) >= 1000, f"Test 3 Failed: Value {value} is less than expected penalty."
+
+    # Test 4: Single city (edge case)
+    tsp.num_cities = 1
+    tsp.distance_matrix = [[0]]
+    qp = tsp.penalty_method(penalty=1.0)
+    assert len(qp.q_dict) == 0, "Test 4 Failed: QUBO dictionary should be empty for a single city."
+
+    # Test 5: Two cities (small problem)
+    tsp.num_cities = 2
+    tsp.distance_matrix = [
+        [0, 10],
+        [10, 0]
+    ]
+    qp = tsp.penalty_method(penalty=1.0)
+    assert len(qp.q_dict) > 0, "Test 5 Failed: QUBO dictionary should not be empty for two cities."
+
+
 def test_mis_class():
     g = nx.Graph()
     g.add_edges_from([(0, 1), (1, 2), (2, 0)])

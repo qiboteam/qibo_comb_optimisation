@@ -11,6 +11,7 @@ from qibo.symbols import X, Y, Z
 from qibo_comb_optimisation.optimization_class.optimization_class import linear_problem, quadratic_problem
 
 
+
 def calculate_two_to_one(num_cities):
     """
     Calculates a mapping from two coordinates to one coordinate for the TSP problem.
