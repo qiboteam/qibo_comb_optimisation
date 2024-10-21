@@ -6,7 +6,7 @@ from qibo.symbols import Z
 
 
 class quadratic_problem:
-    '''
+    """
     A class used to represent either a Quadratic Unconstrained Binary Optimization (QUBO) problem or Ising model.
     Attributes
     ----------
@@ -37,7 +37,8 @@ class quadratic_problem:
 
     brute_force() -> Tuple[List[int], float]:
         Solves the QUBO problem by exhaustively evaluating all possible solutions.
-    '''
+    """
+
     def __init__(self, offset, *args):
         """
         Initializes the quadratic_problem class
@@ -202,7 +203,6 @@ class quadratic_problem:
         constant += 0.5 * linear_offset + 0.25 * quadratic_offset
 
         return h, J, constant
-
 
     def construct_symbolic_Hamiltonian_from_QUBO(self):
         """
@@ -423,6 +423,7 @@ class linear_problem:
     square():
         Squares the linear problem, returning a quadratic problem.
     """
+
     def __init__(self, A, b):
         """
         Initializes the linear problem.
