@@ -1,9 +1,9 @@
 import numpy as np
 import networkx as nx
 from qibo.hamiltonians import SymbolicHamiltonian
-from qibo_comb_optimisation.combinatorial_classes.combinatorial_classes import calculate_two_to_one, tsp_phaser, tsp_mixer, TSP, Mis
-from qibo_comb_optimisation.optimization_class.optimization_class import quadratic_problem
-
+from combinatorial_classes.combinatorial_classes import calculate_two_to_one, tsp_phaser, tsp_mixer, TSP, Mis
+from optimization_class.optimization_class import quadratic_problem, linear_problem
+import pytest
 
 def test_calculate_two_to_one():
     num_cities = 3
@@ -87,6 +87,92 @@ def run_tests():
     qp = tsp.penalty_method(penalty=1.0)
     assert len(qp.q_dict) > 0, "Test 5 Failed: QUBO dictionary should not be empty for two cities."
 
+
+@pytest.fixture
+def setup_tsp():
+    num_cities = 3
+    distance_matrix = [
+        [0, 10, 15],
+        [10, 0, 20],
+        [15, 20, 0]
+    ]
+    two_to_one = lambda u, j: u * num_cities + j
+    return num_cities, distance_matrix, two_to_one
+
+
+def test_qubo_objective_function(setup_tsp):
+    num_cities, distance_matrix, two_to_one = setup_tsp
+
+    # Initialize q_dict and compute objective function part
+    q_dict = {}
+    for u in range(num_cities):
+        for v in range(num_cities):
+            if v != u:
+                for j in range(num_cities):
+                    q_dict[
+                        two_to_one(u, j),
+                        two_to_one(v, (j + 1) % num_cities)
+                    ] = distance_matrix[u][v]
+
+    # Check that the q_dict is correctly populated
+    expected_q_dict = {
+        (0, 4): 10,  # 0 -> 1 (0th city), next 1st
+        (0, 5): 15,  # 0 -> 2 (0th city), next 2nd
+        (1, 3): 10,  # 1 -> 0 (1st city)
+        (1, 5): 20,  # 1 -> 2 (1st city)
+        (2, 3): 15,  # 2 -> 0 (2nd city)
+        (2, 4): 20,  # 2 -> 1 (2nd city)
+    }
+
+    assert q_dict == expected_q_dict, f"Expected {expected_q_dict}, but got {q_dict}"
+
+
+def test_row_constraints(setup_tsp):
+    num_cities, _, two_to_one = setup_tsp
+    penalty = 10
+    qp = quadratic_problem({})
+
+    for v in range(num_cities):
+        row_constraint = [0 for _ in range(num_cities ** 2)]
+        for j in range(num_cities):
+            row_constraint[two_to_one(v, j)] = 1
+        lp = linear(row_constraint, -1)
+        tmp_qp = lp.square()
+        tmp_qp.multiply_scalar(penalty)
+        qp = qp + tmp_qp
+
+    # Check that the row constraints are correctly applied to the QUBO
+    expected_row_constraints = {
+        (0, 0): penalty,  # For v=0, j=0
+        (1, 1): penalty,  # For v=1, j=1
+        (2, 2): penalty,  # For v=2, j=2
+    }
+
+    assert qp.q_dict == expected_row_constraints, f"Expected {expected_row_constraints}, but got {qp.q_dict}"
+
+
+def test_column_constraints(setup_tsp):
+    num_cities, _, two_to_one = setup_tsp
+    penalty = 10
+    qp = quadratic_problem({})
+
+    for j in range(num_cities):
+        col_constraint = [0 for _ in range(num_cities ** 2)]
+        for v in range(num_cities):
+            col_constraint[two_to_one(v, j)] = 1
+        lp = linear_problem(col_constraint, -1)
+        tmp_qp = lp.square()
+        tmp_qp.multiply_scalar(penalty)
+        qp = qp + tmp_qp
+
+    # Check that the column constraints are correctly applied to the QUBO
+    expected_col_constraints = {
+        (0, 0): penalty,  # For v=0, j=0
+        (3, 3): penalty,  # For v=1, j=1
+        (6, 6): penalty,  # For v=2, j=2
+    }
+
+    assert qp.q_dict == expected_col_constraints, f"Expected {expected_col_constraints}, but got {qp.q_dict}"
 
 def test_mis_class():
     g = nx.Graph()
