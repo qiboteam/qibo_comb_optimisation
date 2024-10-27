@@ -446,9 +446,9 @@ class linear_problem:
         >>> b = np.array([5, 6])
         >>> lp = linear_problem(A, b)
         """
-        self.A = A
-        self.b = b
-        self.n = len(b)
+        self.A = np.atleast_2d(A)
+        self.b = np.array([b]) if np.isscalar(b) else np.asarray(b)
+        self.n = self.A.shape[1]
 
     def multiply_scalar(self, scalar_multiplier):
         """

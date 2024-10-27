@@ -124,49 +124,61 @@ def test_qubo_objective_function(setup_tsp):
 def test_row_constraints(setup_tsp):
     num_cities, _, two_to_one = setup_tsp
     penalty = 10
-    qp = quadratic_problem({})
+    qp = quadratic_problem(0, {})
 
     for v in range(num_cities):
-        row_constraint = [0 for _ in range(num_cities ** 2)]
+        row_constraint = np.array([0 for _ in range(num_cities ** 2)])
         for j in range(num_cities):
             row_constraint[two_to_one(v, j)] = 1
-        lp = linear(row_constraint, -1)
+        lp = linear_problem(row_constraint, -1)
         tmp_qp = lp.square()
         tmp_qp.multiply_scalar(penalty)
-        qp = qp + tmp_qp
+        qp + tmp_qp
 
     # Check that the row constraints are correctly applied to the QUBO
-    expected_row_constraints = {
-        (0, 0): penalty,  # For v=0, j=0
-        (1, 1): penalty,  # For v=1, j=1
-        (2, 2): penalty,  # For v=2, j=2
-    }
-
-    assert qp.q_dict == expected_row_constraints, f"Expected {expected_row_constraints}, but got {qp.q_dict}"
+    expected_row_constraints = {(0, 0): -10, (0, 1): 10, (0, 2): 10, (0, 3): 0, (0, 4): 0, (0, 5): 0, (0, 6): 0,
+                                (0, 7): 0, (0, 8): 0, (1, 0): 10, (1, 1): -10, (1, 2): 10, (1, 3): 0, (1, 4): 0,
+                                (1, 5): 0, (1, 6): 0, (1, 7): 0, (1, 8): 0, (2, 0): 10, (2, 1): 10, (2, 2): -10,
+                                (2, 3): 0, (2, 4): 0, (2, 5): 0, (2, 6): 0, (2, 7): 0, (2, 8): 0, (3, 0): 0, (3, 1): 0,
+                                (3, 2): 0, (3, 3): -10, (3, 4): 10, (3, 5): 10, (3, 6): 0, (3, 7): 0, (3, 8): 0,
+                                (4, 0): 0, (4, 1): 0, (4, 2): 0, (4, 3): 10, (4, 4): -10, (4, 5): 10, (4, 6): 0,
+                                (4, 7): 0, (4, 8): 0, (5, 0): 0, (5, 1): 0, (5, 2): 0, (5, 3): 10, (5, 4): 10,
+                                (5, 5): -10, (5, 6): 0, (5, 7): 0, (5, 8): 0, (6, 0): 0, (6, 1): 0, (6, 2): 0,
+                                (6, 3): 0, (6, 4): 0, (6, 5): 0, (6, 6): -10, (6, 7): 10, (6, 8): 10, (7, 0): 0,
+                                (7, 1): 0, (7, 2): 0, (7, 3): 0, (7, 4): 0, (7, 5): 0, (7, 6): 10, (7, 7): -10,
+                                (7, 8): 10, (8, 0): 0, (8, 1): 0, (8, 2): 0, (8, 3): 0, (8, 4): 0, (8, 5): 0,
+                                (8, 6): 10, (8, 7): 10, (8, 8): -10}
+    assert qp.Qdict == expected_row_constraints, f"Expected {expected_row_constraints}, but got {qp.Qdict}"
 
 
 def test_column_constraints(setup_tsp):
     num_cities, _, two_to_one = setup_tsp
     penalty = 10
-    qp = quadratic_problem({})
+    qp = quadratic_problem(0, {})
 
     for j in range(num_cities):
-        col_constraint = [0 for _ in range(num_cities ** 2)]
+        col_constraint = np.array([0 for _ in range(num_cities ** 2)])
         for v in range(num_cities):
             col_constraint[two_to_one(v, j)] = 1
         lp = linear_problem(col_constraint, -1)
         tmp_qp = lp.square()
         tmp_qp.multiply_scalar(penalty)
-        qp = qp + tmp_qp
+        qp + tmp_qp
 
     # Check that the column constraints are correctly applied to the QUBO
-    expected_col_constraints = {
-        (0, 0): penalty,  # For v=0, j=0
-        (3, 3): penalty,  # For v=1, j=1
-        (6, 6): penalty,  # For v=2, j=2
-    }
-
-    assert qp.q_dict == expected_col_constraints, f"Expected {expected_col_constraints}, but got {qp.q_dict}"
+    expected_col_constraints = {(0, 0): -10, (0, 1): 0, (0, 2): 0, (0, 3): 10, (0, 4): 0, (0, 5): 0, (0, 6): 10,
+                                (0, 7): 0, (0, 8): 0, (1, 0): 0, (1, 1): -10, (1, 2): 0, (1, 3): 0, (1, 4): 10,
+                                (1, 5): 0, (1, 6): 0, (1, 7): 10, (1, 8): 0, (2, 0): 0, (2, 1): 0, (2, 2): -10,
+                                (2, 3): 0, (2, 4): 0, (2, 5): 10, (2, 6): 0, (2, 7): 0, (2, 8): 10, (3, 0): 10,
+                                (3, 1): 0, (3, 2): 0, (3, 3): -10, (3, 4): 0, (3, 5): 0, (3, 6): 10, (3, 7): 0,
+                                (3, 8): 0, (4, 0): 0, (4, 1): 10, (4, 2): 0, (4, 3): 0, (4, 4): -10, (4, 5): 0,
+                                (4, 6): 0, (4, 7): 10, (4, 8): 0, (5, 0): 0, (5, 1): 0, (5, 2): 10, (5, 3): 0,
+                                (5, 4): 0, (5, 5): -10, (5, 6): 0, (5, 7): 0, (5, 8): 10, (6, 0): 10, (6, 1): 0,
+                                (6, 2): 0, (6, 3): 10, (6, 4): 0, (6, 5): 0, (6, 6): -10, (6, 7): 0, (6, 8): 0,
+                                (7, 0): 0, (7, 1): 10, (7, 2): 0, (7, 3): 0, (7, 4): 10, (7, 5): 0, (7, 6): 0,
+                                (7, 7): -10, (7, 8): 0, (8, 0): 0, (8, 1): 0, (8, 2): 10, (8, 3): 0, (8, 4): 0,
+                                (8, 5): 10, (8, 6): 0, (8, 7): 0, (8, 8): -10}
+    assert qp.Qdict == expected_col_constraints, f"Expected {expected_col_constraints}, but got {qp.Qdict}"
 
 def test_mis_class():
     g = nx.Graph()
