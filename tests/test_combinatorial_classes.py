@@ -116,12 +116,15 @@ def test_qubo_objective_function(setup_tsp):
 
     # Check that the q_dict is correctly populated
     expected_q_dict = {
-        (0, 4): 10,  # 0 -> 1 (0th city), next 1st
-        (0, 5): 15,  # 0 -> 2 (0th city), next 2nd
-        (1, 3): 10,  # 1 -> 0 (1st city)
-        (1, 5): 20,  # 1 -> 2 (1st city)
-        (2, 3): 15,  # 2 -> 0 (2nd city)
-        (2, 4): 20,  # 2 -> 1 (2nd city)
+        (0, 4): 10,
+        (1, 5): 10,
+        (2, 3): 10,
+        (0, 7): 15,
+        (1, 8): 15,
+        (2, 6): 15,
+        (3, 7): 20,
+        (4, 8): 20,
+        (5, 6): 20
     }
 
     assert q_dict == expected_q_dict, f"Expected {expected_q_dict}, but got {q_dict}"
