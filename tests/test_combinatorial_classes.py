@@ -115,18 +115,9 @@ def test_qubo_objective_function(setup_tsp):
                     ] = distance_matrix[u][v]
 
     # Check that the q_dict is correctly populated
-    expected_q_dict = {
-        (0, 4): 10,
-        (1, 5): 10,
-        (2, 3): 10,
-        (0, 7): 15,
-        (1, 8): 15,
-        (2, 6): 15,
-        (3, 7): 20,
-        (4, 8): 20,
-        (5, 6): 20
-    }
-
+    expected_q_dict = {(0, 4): 10, (1, 5): 10, (2, 3): 10, (0, 7): 15, (1, 8): 15, (2, 6): 15, (3, 1): 10, (4, 2): 10,
+                       (5, 0): 10, (3, 7): 20, (4, 8): 20, (5, 6): 20, (6, 1): 15, (7, 2): 15, (8, 0): 15, (6, 4): 20,
+                       (7, 5): 20, (8, 3): 20}
     assert q_dict == expected_q_dict, f"Expected {expected_q_dict}, but got {q_dict}"
 
 
