@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo_comb_optimisation.combinatorial_classes.combinatorial_classes import calculate_two_to_one, tsp_phaser, tsp_mixer, TSP, Mis
-from qibo_comb_optimisation.optimization_class.optimization_class import quadratic_problem, linear_problem
+from qibo_comb_optimisation.optimization_class.optimization_class import QUBO, linear_problem
 import pytest
 
 def test_calculate_two_to_one():
@@ -56,7 +56,7 @@ def run_tests():
     # Test 1: Basic functionality with a moderate penalty value
     penalty = 1.0
     qp = tsp.penalty_method(penalty)
-    assert isinstance(qp, quadratic_problem), "Test 1 Failed: Returned object is not a quadratic_problem."
+    assert isinstance(qp, QUBO), "Test 1 Failed: Returned object is not a QUBO."
     assert len(qp.q_dict) > 0, "Test 1 Failed: QUBO dictionary is empty."
 
     # Test 2: Zero penalty
@@ -124,7 +124,7 @@ def test_qubo_objective_function(setup_tsp):
 def test_row_constraints(setup_tsp):
     num_cities, _, two_to_one = setup_tsp
     penalty = 10
-    qp = quadratic_problem(0, {})
+    qp = QUBO(0, {})
 
     for v in range(num_cities):
         row_constraint = np.array([0 for _ in range(num_cities ** 2)])
@@ -154,7 +154,7 @@ def test_row_constraints(setup_tsp):
 def test_column_constraints(setup_tsp):
     num_cities, _, two_to_one = setup_tsp
     penalty = 10
-    qp = quadratic_problem(0, {})
+    qp = QUBO(0, {})
 
     for j in range(num_cities):
         col_constraint = np.array([0 for _ in range(num_cities ** 2)])
@@ -189,7 +189,7 @@ def test_mis_class():
 
     penalty = 10
     qp = mis.penalty_method(penalty)
-    assert isinstance(qp, quadratic_problem), "Mis.penalty_method did not return a quadratic_problem"
+    assert isinstance(qp, QUBO), "Mis.penalty_method did not return a QUBO"
 
     mis_str = str(mis)
     assert mis_str == "Mis", "Mis.__str__ did not return the expected string"

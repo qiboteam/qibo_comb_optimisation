@@ -5,7 +5,7 @@ from qibo import hamiltonians
 from qibo.symbols import Z
 
 
-class quadratic_problem:
+class QUBO:
     """
     A class used to represent either a Quadratic Unconstrained Binary Optimization (QUBO) problem or Ising model.
     Attributes
@@ -41,7 +41,7 @@ class quadratic_problem:
 
     def __init__(self, offset, *args):
         """
-        Initializes the quadratic_problem class
+        Initializes the QUBO class
 
         Parameters
         ________
@@ -69,7 +69,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> qp.Qdict
         {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
         """
@@ -111,7 +111,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> qp.multiply_scalar(2)
         >>> qp.Qdict
         {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
@@ -245,7 +245,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> x = [1, 1]
         >>> qp.evaluate_f(x)
         0.5
@@ -280,7 +280,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> x = [1, 1]
         >>> qp.evaluate_grad_f(x)
         [1.5, -0.5]
@@ -313,7 +313,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> best_solution, best_obj_value = qp.tabu_search(50, 5)
         >>> best_solution
         [0, 1]
@@ -366,7 +366,7 @@ class quadratic_problem:
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = quadratic_problem(0, Qdict)
+        >>> qp = QUBO(0, Qdict)
         >>> opt_vector, min_value = qp.brute_force()
         >>> opt_vector
         [1, 0]
@@ -394,6 +394,21 @@ class quadratic_problem:
         )  # Optimum vector x that produces the lowest value
 
         return opt_vector, min_value
+
+    def canonical_q(self):
+        """
+        We want to keep non-zero component when i < j.
+        :return: a dictionary and also update Qdict
+        """
+        for i in range(self.n):
+            for j in range(i, self.n):
+                if (j, i) in self.Qdict:
+                    if (i, j) in self.Qdict:
+                        self.Qdict[(i,j)] += self.Qdict.pop((j,i))
+                    else:
+                        self.Qdict[(i,j)] = self.Qdict.pop((j,i))
+                    self.Qdict.pop([j, i], None)
+        return self.Qdict
 
 
 class linear_problem:
@@ -539,7 +554,7 @@ class linear_problem:
 
         Returns
         -------
-        quadratic_problem
+        QUBO
             A quadratic problem corresponding to squaring the linear function.
 
         Examples
@@ -560,4 +575,4 @@ class linear_problem:
         for i in range(num_rows):
             for j in range(num_cols):
                 Qdict[(i, j)] = quadraticpart[i, j]
-        return quadratic_problem(offset, Qdict)
+        return QUBO(offset, Qdict)
