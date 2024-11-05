@@ -78,6 +78,62 @@ def test_brute_force():
     assert len(opt_vector) == 2
     assert isinstance(min_value, float)
 
+def test_initialization_with_h_and_J():
+    # Define example h and J for the Ising model
+    h = {0: 1.0, 1: -1.5}
+    J = {(0, 1): 0.5}
+    offset = 2.0
+
+    # Initialize QUBO instance with Ising h and J
+    qubo_instance = QUBO(offset, h, J)
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0}
+    assert qubo_instance.Qdict == expected_Qdict, "Qdict should be created based on h and J conversion"
+
+    # Check that `n` was set correctly (it should be the max variable index + 1)
+    assert qubo_instance.n == 2, "n should be the number of variables (max index + 1)"
+
+def test_offset_calculation():
+    # Define example h and J for offset calculation
+    h = {0: 1.0, 1: -1.5}
+    J = {(0, 1): 0.5}
+    offset = 2.0
+
+    # Initialize QUBO instance with Ising h and J
+    qubo_instance = QUBO(offset, h, J)
+
+    # Expected offset after adjustment: offset + sum(J) - sum(h)
+    expected_offset = offset + sum(J.values()) - sum(h.values())
+
+    # Verify the offset value
+    assert qubo_instance.offset == expected_offset, "Offset should be adjusted based on sum of h and J values"
+
+def test_isolated_terms_in_h_and_J():
+    # Case with no interactions (only diagonal terms in h)
+    h = {0: 1.5, 1: -2.0, 2: 0.5}
+    J = {}
+    offset = 1.0
+
+    qubo_instance = QUBO(offset, h, J)
+    print(qubo_instance.Qdict)
+    print("check above")
+    # Expected Qdict should only contain diagonal terms based on h
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0, (2, 2): 0.0}
+    assert qubo_instance.Qdict == expected_Qdict, "Qdict should reflect only h terms when J is empty"
+
+    # Expected offset should only adjust based on sum of h values since J is empty
+    expected_offset = offset - sum(h.values())
+    assert qubo_instance.offset == expected_offset, "Offset should adjust only with h values when J is empty"
+
+def test_combine_pairs():
+    # Populate Qdict with both (i, j) and (j, i) pairs
+    qubo_instance= QUBO(0, {(0, 1): 2, (1, 0): 3, (1, 2): 5, (2, 1): -1})
+    # Run canonical_q
+    result = qubo_instance.canonical_q()
+
+    # Expected outcome after combining pairs
+    expected_result = {(0, 1): 5, (1, 2): 4}
+    assert result == expected_result, "canonical_q should combine (i, j) and (j, i) pairs"
+
 
 def test_linear_initialization():
     A = np.array([[1, 2], [3, 4]])
@@ -129,3 +185,4 @@ def test_linear_square():
     expected_offset = 61
     assert Qdict == expected_Qdict
     assert offset == expected_offset
+

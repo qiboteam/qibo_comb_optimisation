@@ -407,7 +407,7 @@ class QUBO:
                         self.Qdict[(i,j)] += self.Qdict.pop((j,i))
                     else:
                         self.Qdict[(i,j)] = self.Qdict.pop((j,i))
-                    self.Qdict.pop([j, i], None)
+                    self.Qdict.pop((j, i), None)
         return self.Qdict
 
 
