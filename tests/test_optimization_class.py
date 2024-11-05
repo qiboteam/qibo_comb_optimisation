@@ -124,6 +124,28 @@ def test_isolated_terms_in_h_and_J():
     expected_offset = offset - sum(h.values())
     assert qubo_instance.offset == expected_offset, "Offset should adjust only with h values when J is empty"
 
+def test_consistent_terms_in_ham():
+    # Run construct_symbolic_Hamiltonian_from_QUBO
+    qubo_instance = QUBO(0, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
+    ham = qubo_instance.construct_symbolic_Hamiltonian_from_QUBO()
+
+    # Expected terms based on qubo_to_ising output
+    h, J, constant = qubo_instance.qubo_to_ising()
+
+    # Extract terms from the symbolic Hamiltonian (converting to string for easier term extraction)
+    ham_str = str(ham.form).replace(" ","")
+
+    # Verify linear terms from h are present
+    for i, coeff in h.items():
+        term = f"{coeff}*Z{i}"
+        assert term in ham_str, f"Expected linear term '{term}' not found in Hamiltonian."
+
+    # Verify quadratic terms from J are present
+    for (u, v), coeff in J.items():
+        term = f"{coeff}*Z{u}*Z{v}"
+        assert term in ham_str, f"Expected quadratic term '{term}' not found in Hamiltonian."
+
+
 def test_combine_pairs():
     # Populate Qdict with both (i, j) and (j, i) pairs
     qubo_instance= QUBO(0, {(0, 1): 2, (1, 0): 3, (1, 2): 5, (2, 1): -1})
