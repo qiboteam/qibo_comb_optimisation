@@ -187,17 +187,8 @@ class QUBO:
             else:
                 if bias != 0.0:
                     J[(u, v)] = bias / 4
-
-                if u in h:
-                    h[u] += bias / 4
-                else:
-                    h[u] = bias / 4
-
-                if v in h:
-                    h[v] += bias / 4
-                else:
-                    h[v] = bias / 4
-
+                h[u] = h.setdefault(u, 0) + bias / 4
+                h[v] = h.setdefault(v, 0) + bias / 4
                 quadratic_offset += bias
 
         constant += 0.5 * linear_offset + 0.25 * quadratic_offset
@@ -403,10 +394,7 @@ class QUBO:
         for i in range(self.n):
             for j in range(i, self.n):
                 if (j, i) in self.Qdict:
-                    if (i, j) in self.Qdict:
-                        self.Qdict[(i,j)] += self.Qdict.pop((j,i))
-                    else:
-                        self.Qdict[(i,j)] = self.Qdict.pop((j,i))
+                    self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop((j, i))
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
