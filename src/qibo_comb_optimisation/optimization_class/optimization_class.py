@@ -89,12 +89,11 @@ class QUBO:
 
             # next the optimization_class biases
             for (u, v), bias in self.Qdict.items():
-                if bias == 0.0:
-                    continue
-                self.Qdict[(u, v)] = 4.0 * bias
-                self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2.0 * bias
-                self.Qdict[(v, v)] = self.Qdict.setdefault((v, v), 0) - 2.0 * bias
-                self.n = max([self.n, u, v])
+                if bias != 0:
+                    self.Qdict[(u, v)] = 4.0 * bias
+                    self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2.0 * bias
+                    self.Qdict[(v, v)] = self.Qdict.setdefault((v, v), 0) - 2.0 * bias
+                    self.n = max([self.n, u, v])
             self.n += 1
             # finally adjust the offset based on QUBO definitions rather than Ising formulation
             self.offset += sum(J.values()) - sum(h.values())
