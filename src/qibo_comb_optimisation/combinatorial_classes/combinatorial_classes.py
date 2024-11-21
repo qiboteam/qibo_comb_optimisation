@@ -1,5 +1,5 @@
 """
-This module comprises of various combinatorial optimization applications that are commonly formulated in QUBO formulations.
+This module comprises of various combinatorial optimisation applications that are commonly formulated in QUBO formulations.
 """
 
 import numpy as np
@@ -8,7 +8,7 @@ from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from qibo_comb_optimisation.optimization_class.optimization_class import linear_problem, quadratic_problem
+from qibo_comb_optimisation.optimisation_class.optimisation_class import linear_problem, quadratic_problem
 
 
 def calculate_two_to_one(num_cities):
@@ -115,7 +115,7 @@ class TSP:
     asks the following question: "Given a list of cities and the distances between each pair
     of cities,what is the shortest possible route for a salesman to visit each city exactly
     once and return to the origin city?"
-    It is an NP-hard problem in combinatorial optimization.
+    It is an NP-hard problem in combinatorial optimisation.
     It is also important in theoretical computer science and
     operations research.
 
