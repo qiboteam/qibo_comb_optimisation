@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo_comb_optimisation.combinatorial_classes.combinatorial_classes import calculate_two_to_one, tsp_phaser, tsp_mixer, TSP, Mis
-from qibo_comb_optimisation.optimisation_class.optimization_class import QUBO, linear_problem
+from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
 import pytest
 
 def test_calculate_two_to_one():
