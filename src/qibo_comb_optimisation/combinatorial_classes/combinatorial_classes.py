@@ -8,7 +8,11 @@ from qibo.backends import _check_backend
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
-from qibo_comb_optimisation.optimisation_class.optimisation_class import linear_problem, quadratic_problem
+
+from qibo_comb_optimisation.optimisation_class.optimisation_class import (
+    linear_problem,
+    QUBO,
+)
 
 
 def calculate_two_to_one(num_cities):
@@ -242,7 +246,7 @@ class TSP:
             penalty (float): The penalty parameter for constraint violations.
 
         Returns:
-            quadratic_problem: A QUBO object for the TSP with penalties applied.
+            QUBO: A QUBO object for the TSP with penalties applied.
         """
         q_dict = {}
         for u in range(self.num_cities):
@@ -252,29 +256,29 @@ class TSP:
                         # this is the objective function
                         q_dict[
                             self.two_to_one[u, j],
-                            self.two_to_one[v, (j + 1) % (self.num_cities + 1)],
+                            self.two_to_one[v, (j + 1) % self.num_cities],
                         ] = self.distance_matrix[u, v]
-        qp = quadratic_problem(q_dict)
+        qp = QUBO(0, q_dict)
         # row constraints
 
         for v in range(self.num_cities):
             row_constrait = [0 for _ in range(self.num_cities**2)]
             for j in range(self.num_cities):
-                row_constrait[self.two_to_one(v, j)] = 1
+                row_constrait[self.two_to_one[v, j]] = 1
             lp = linear_problem(row_constrait, -1)
             tmp_qp = lp.square()
             tmp_qp.multiply_scalar(penalty)
-            qp = qp + tmp_qp
+            qp + tmp_qp
 
         # column constraints
         for j in range(self.num_cities):
             col_constrait = [0 for _ in range(self.num_cities**2)]
             for v in range(self.num_cities):
-                col_constrait[self.two_to_one(v, j)] = 1
+                col_constrait[self.two_to_one[v, j]] = 1
             lp = linear_problem(col_constrait, -1)
             tmp_qp = lp.square()
             tmp_qp.multiply_scalar(penalty)
-            qp = qp + tmp_qp
+            qp + tmp_qp
         return qp
 
 
@@ -318,16 +322,15 @@ class Mis:
             penalty (float): The penalty parameter for constraint violations.
 
         Returns:
-            quadratic_problem: A QUBO object for the MIS problem.
+            QUBO: A QUBO object for the MIS problem.
         """
         q_dict = {}
         for i in range(self.n):
             q_dict[(i, i)] = -1
         for u, v in self.g.edges:
             q_dict[(u, v)] = penalty
-        return quadratic_problem(0, q_dict)
+        return QUBO(0, q_dict)
 
     def __str__(self):
         return self.__class__.__name__
-
 

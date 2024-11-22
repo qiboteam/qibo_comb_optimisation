@@ -1,11 +1,11 @@
 import numpy as np
-from qibo_comb_optimisation.optimisation_class.optimisation_class import quadratic_problem, linear_problem
+from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
 
 
-# Test initialization of the quadratic_problem class
+# Test initialization of the QUBO class
 def test_initialization():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     assert qp.Qdict == Qdict
     assert qp.offset == 0.0
@@ -14,7 +14,7 @@ def test_initialization():
 
 def test_multiply_scalar():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
     qp.multiply_scalar(2)
     assert qp.Qdict == {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
 
@@ -22,15 +22,15 @@ def test_multiply_scalar():
 def test_add():
     Qdict1 = {(0, 0): 1.0, (0, 1): 0.5}
     Qdict2 = {(0, 0): -1.0, (1, 1): 2.0}
-    qp1 = quadratic_problem(0, Qdict1)
-    qp2 = quadratic_problem(0, Qdict2)
+    qp1 = QUBO(0, Qdict1)
+    qp2 = QUBO(0, Qdict2)
     qp1 + qp2
     assert qp1.Qdict == {(0, 0): 0.0, (0, 1): 0.5, (1, 1): 2.0}
 
 
 def test_qubo_to_ising():
     Qdict = {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     h, J, constant = qp.qubo_to_ising()
 
@@ -41,7 +41,7 @@ def test_qubo_to_ising():
 
 def test_evaluate_f():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     x = [1, 1]
     f_value = qp.evaluate_f(x)
@@ -51,7 +51,7 @@ def test_evaluate_f():
 
 def test_evaluate_grad_f():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     x = [1, 1]
     grad = qp.evaluate_grad_f(x)
@@ -60,7 +60,7 @@ def test_evaluate_grad_f():
 
 def test_tabu_search():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     best_solution, best_obj_value = qp.tabu_search(max_iterations=50, tabu_size=5)
 
@@ -68,14 +68,93 @@ def test_tabu_search():
     assert isinstance(best_obj_value, float)
 
 
+
 def test_brute_force():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-    qp = quadratic_problem(0, Qdict)
+    qp = QUBO(0, Qdict)
 
     opt_vector, min_value = qp.brute_force()
 
     assert len(opt_vector) == 2
     assert isinstance(min_value, float)
+
+def test_initialization_with_h_and_J():
+    # Define example h and J for the Ising model
+    h = {0: 1.0, 1: -1.5}
+    J = {(0, 1): 0.5}
+    offset = 2.0
+
+    # Initialize QUBO instance with Ising h and J
+    qubo_instance = QUBO(offset, h, J)
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0}
+    assert qubo_instance.Qdict == expected_Qdict, "Qdict should be created based on h and J conversion"
+
+    # Check that `n` was set correctly (it should be the max variable index + 1)
+    assert qubo_instance.n == 2, "n should be the number of variables (max index + 1)"
+
+def test_offset_calculation():
+    # Define example h and J for offset calculation
+    h = {0: 1.0, 1: -1.5}
+    J = {(0, 1): 0.5}
+    offset = 2.0
+
+    # Initialize QUBO instance with Ising h and J
+    qubo_instance = QUBO(offset, h, J)
+
+    # Expected offset after adjustment: offset + sum(J) - sum(h)
+    expected_offset = offset + sum(J.values()) - sum(h.values())
+
+    # Verify the offset value
+    assert qubo_instance.offset == expected_offset, "Offset should be adjusted based on sum of h and J values"
+
+def test_isolated_terms_in_h_and_J():
+    # Case with no interactions (only diagonal terms in h)
+    h = {0: 1.5, 1: -2.0, 2: 0.5}
+    J = {}
+    offset = 1.0
+
+    qubo_instance = QUBO(offset, h, J)
+    print(qubo_instance.Qdict)
+    print("check above")
+    # Expected Qdict should only contain diagonal terms based on h
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0, (2, 2): 0.0}
+    assert qubo_instance.Qdict == expected_Qdict, "Qdict should reflect only h terms when J is empty"
+
+    # Expected offset should only adjust based on sum of h values since J is empty
+    expected_offset = offset - sum(h.values())
+    assert qubo_instance.offset == expected_offset, "Offset should adjust only with h values when J is empty"
+
+def test_consistent_terms_in_ham():
+    # Run construct_symbolic_Hamiltonian_from_QUBO
+    qubo_instance = QUBO(0, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
+    ham = qubo_instance.construct_symbolic_Hamiltonian_from_QUBO()
+
+    # Expected terms based on qubo_to_ising output
+    h, J, constant = qubo_instance.qubo_to_ising()
+
+    # Extract terms from the symbolic Hamiltonian (converting to string for easier term extraction)
+    ham_str = str(ham.form).replace(" ","")
+
+    # Verify linear terms from h are present
+    for i, coeff in h.items():
+        term = f"{coeff}*Z{i}"
+        assert term in ham_str, f"Expected linear term '{term}' not found in Hamiltonian."
+
+    # Verify quadratic terms from J are present
+    for (u, v), coeff in J.items():
+        term = f"{coeff}*Z{u}*Z{v}"
+        assert term in ham_str, f"Expected quadratic term '{term}' not found in Hamiltonian."
+
+
+def test_combine_pairs():
+    # Populate Qdict with both (i, j) and (j, i) pairs
+    qubo_instance= QUBO(0, {(0, 1): 2, (1, 0): 3, (1, 2): 5, (2, 1): -1})
+    # Run canonical_q
+    result = qubo_instance.canonical_q()
+
+    # Expected outcome after combining pairs
+    expected_result = {(0, 1): 5, (1, 2): 4}
+    assert result == expected_result, "canonical_q should combine (i, j) and (j, i) pairs"
 
 
 def test_linear_initialization():
@@ -128,3 +207,4 @@ def test_linear_square():
     expected_offset = 61
     assert Qdict == expected_Qdict
     assert offset == expected_offset
+
