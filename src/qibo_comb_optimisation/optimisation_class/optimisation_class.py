@@ -63,7 +63,7 @@ class quadratic_problem:
                 the model and values are biases.
             J (dict[(variable, variable), bias]):
                Quadratic biases as a dict of the form {(u, v): bias, ...}, where keys
-               are 2-tuples of variables of the model and values are optimization_class biases
+               are 2-tuples of variables of the model and values are optimisation_class biases
                associated with the pair of variables (the interaction).
         Example
         -------
@@ -86,7 +86,7 @@ class quadratic_problem:
             self.Qdict = {(v, v): 2.0 * bias for v, bias in h.items()}
             self.n = 0
 
-            # next the optimization_class biases
+            # next the optimisation_class biases
             for (u, v), bias in self.Qdict.items():
                 if bias == 0.0:
                     continue
@@ -121,8 +121,8 @@ class quadratic_problem:
 
     def __add__(self, other_Quadratic):
         """
-        :param other_Quadratic: another optimization_class class object
-        :return: updating the optimization_class function to obtain the sum
+        :param other_Quadratic: another optimisation_class class object
+        :return: updating the optimisation_class function to obtain the sum
         """
         for key in other_Quadratic.Qdict:
             if key in self.Qdict:
@@ -135,7 +135,7 @@ class quadratic_problem:
     def qubo_to_ising(self, constant=0.0):
         """Convert a QUBO problem to an Ising problem.
 
-        Map a optimization_class unconstrained binary optimization (QUBO) problem  defined over binary variables
+        Map a optimisation_class unconstrained binary optimisation (QUBO) problem  defined over binary variables
         (0 or 1 values), where the linear term is contained along x' Qx
         the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
         Return h and J that define the Ising model as well as the offset in energy
