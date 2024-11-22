@@ -9,7 +9,7 @@ from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
 
-from qibo_comb_optimisation.optimisation_class.optimization_class import (
+from qibo_comb_optimisation.optimisation_class.optimisation_class import (
     linear_problem,
     QUBO,
 )
