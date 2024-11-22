@@ -1,5 +1,5 @@
 import numpy as np
-from qibo_comb_optimisation.optimization_class.optimization_class import QUBO, linear_problem
+from qibo_comb_optimisation.optimisation_class.optimization_class import QUBO, linear_problem
 
 
 # Test initialization of the QUBO class
