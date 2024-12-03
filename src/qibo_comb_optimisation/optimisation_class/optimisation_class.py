@@ -398,7 +398,7 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self, p: int, gamma: list = None, beta: list = None):
+    def qubo_to_qaoa_circuit(self, p: int, params: list = None):
         """
         Generates a QAOA circuit for the QUBO problem.
 
@@ -428,8 +428,8 @@ class QUBO:
         qaoa = QAOA(hamiltonian)
 
         # Optionally set parameters
-        if gamma is not None and beta is not None:
-            qaoa.set_parameters(gamma, beta)
+        if params is not None:
+            qaoa.set_parameters(params)
 
         return qaoa
 
