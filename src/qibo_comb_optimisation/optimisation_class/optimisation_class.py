@@ -179,7 +179,7 @@ class QUBO:
 
         for (u, v), bias in self.Qdict.items():
             if u == v:
-                h[u] = h.setdefault(u, 0) + bias/2
+                h[u] = h.setdefault(u, 0) + bias / 2
                 linear_offset += bias
 
             else:
@@ -392,7 +392,9 @@ class QUBO:
         for i in range(self.n):
             for j in range(i, self.n):
                 if (j, i) in self.Qdict:
-                    self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop((j, i))
+                    self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop(
+                        (j, i)
+                    )
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
@@ -419,7 +421,7 @@ class QUBO:
 
         # Create the Ising Hamiltonian using Qibo
         symbolic_ham = sum(h[i] * Z(i) for i in h)
-        symbolic_ham += sum(J[(u, v)] * Z(u)*Z(v) for (u, v) in J)
+        symbolic_ham += sum(J[(u, v)] * Z(u) * Z(v) for (u, v) in J)
 
         # Define the QAOA model
         hamiltonian = SymbolicHamiltonian(symbolic_ham)
