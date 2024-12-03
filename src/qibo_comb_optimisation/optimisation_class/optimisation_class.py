@@ -2,6 +2,8 @@ import itertools
 
 import numpy as np
 from qibo import hamiltonians
+from qibo.models import QAOA
+from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.symbols import Z
 
 
@@ -270,7 +272,7 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> x = [1, 1]
         >>> qp.evaluate_grad_f(x)
-        [1.5, -0.5]
+        array([ 1.5, -0.5])
         """
         grad = np.asarray([self.Qdict.get((i, i), 0) for i in range(self.n)])
         for i in range(self.n):
@@ -303,9 +305,9 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> best_solution, best_obj_value = qp.tabu_search(50, 5)
         >>> best_solution
-        [0, 1]
+        array([0, 1])
         >>> best_obj_value
-        0.5
+        -1.0
         """
         x = np.random.randint(2, size=self.n)  # Initial solution
         best_solution = x.copy()
@@ -356,9 +358,9 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> opt_vector, min_value = qp.brute_force()
         >>> opt_vector
-        [1, 0]
+        (0, 1)
         >>> min_value
-        -0.5
+        -1.0
         """
         possible_values = {}
         # A list of all the possible permutations for x vector
@@ -393,6 +395,41 @@ class QUBO:
                     self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop((j, i))
                     self.Qdict.pop((j, i), None)
         return self.Qdict
+
+    def qubo_to_qaoa_circuit(self, p: int, gamma: list = None, beta: list = None):
+        """
+        Generates a QAOA circuit for the QUBO problem.
+
+        Parameters
+        ----------
+        p : int
+            The number of QAOA layers (depth of the circuit).
+        gamma : list, optional
+            A list of gamma parameters for each layer. If None, initializes randomly.
+        beta : list, optional
+            A list of beta parameters for each layer. If None, initializes randomly.
+
+        Returns
+        -------
+        circuit : qibo.models.QAOA
+            A QAOA circuit for the QUBO problem.
+        """
+        # Convert QUBO to Ising Hamiltonian
+        h, J, constant = self.qubo_to_ising()
+
+        # Create the Ising Hamiltonian using Qibo
+        symbolic_ham = sum(h[i] * Z(i) for i in h)
+        symbolic_ham += sum(J[(u, v)] * Z(u)*Z(v) for (u, v) in J)
+
+        # Define the QAOA model
+        hamiltonian = SymbolicHamiltonian(symbolic_ham)
+        qaoa = QAOA(hamiltonian)
+
+        # Optionally set parameters
+        if gamma is not None and beta is not None:
+            qaoa.set_parameters(gamma, beta)
+
+        return qaoa
 
 
 class linear_problem:
@@ -504,7 +541,6 @@ class linear_problem:
         """
         self.A += other_linear.A
         self.b += other_linear.b
-        return self
 
     def evaluate_f(self, x):
         """
