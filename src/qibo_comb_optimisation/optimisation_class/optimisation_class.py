@@ -1,8 +1,8 @@
 import itertools
 
 import numpy as np
-from qibo import hamiltonians
-from qibo.models import QAOA
+from qibo import hamiltonians, gates
+from qibo.models import QAOA, Circuit
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.symbols import Z
 
@@ -83,6 +83,7 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
+            self.h , self.J, self.ising_constant = self.QUBO_to_ising(self.Qdict)
         else:
             h = args[0]
             J = args[1]
@@ -398,7 +399,7 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self, p: int, params: list = None):
+    def qubo_to_qaoa_circuit(self,params: list = None):
         """
         Generates a QAOA circuit for the QUBO problem.
 
@@ -432,6 +433,113 @@ class QUBO:
             qaoa.set_parameters(params)
 
         return qaoa
+
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None):
+        """
+            Constructs a QAOA circuit for the given QUBO problem.
+
+            Parameters
+            ----------
+            p : int
+                The number of QAOA layers (repetition of the alternating unitary blocks).
+
+            Returns
+            -------
+            circuit : qibo.models.Circuit
+                The QAOA circuit corresponding to the QUBO problem.
+            """
+
+        circuit = Circuit(self.n)
+        p = len(gammas)
+        def phase_separation(circuit, gamma):
+            """
+            Apply the phase separation layer (corresponding to the Ising model Hamiltonian).
+            This step encodes the interaction terms into the quantum circuit.
+            """
+            # Apply R_z for diagonal terms (h_i)
+            for i in range(self.n):
+                circuit.rz(-2 * gamma * self.h[i], i)  # -2 * gamma * h_i
+
+            # Apply CNOT and R_z for off-diagonal terms (J_ij)
+            for i in range(self.n):
+                for j in range(self.n):
+                    weight = self.J[i, j]
+                    if weight != 0:
+                        circuit.cx(i, j)
+                        circuit.rz(-2 * gammas * weight, j)  # -2 * gamma * J_ij
+                        circuit.cx(i, j)
+
+
+        def mixer(circuit, beta, alpha=None):
+            """
+            Apply the mixer layer (uniform superposition evolution).
+            This step applies RX rotations on each qubit to spread the superposition.
+            """
+            for i in range(self.n):
+                circuit.rx(2 * beta, i)  # Apply RX gates for mixer
+                if alpha:
+                    circuit.ry(2*alpha, i)
+
+
+        def build(circuit, gammas, betas, alphas=None):
+            """
+            Construct the full QAOA circuit for the Ising model with p layers.
+            """
+            # Apply initial Hadamard gates (uniform superposition)
+            for i in range(self.n):
+                circuit.h(i)
+
+            for layer in range(p):
+                phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
+                if alphas:
+                    mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)
+                else:
+                    mixer(circuit, betas[layer])
+
+            return circuit
+        if alphas:
+            return build(circuit, gammas, betas, alphas)
+        return build(circuit, gammas, betas)
+
+
+    def qubo_to_qaoa_object(self,params: list = None):
+        """
+        Generates a QAOA circuit for the QUBO problem.
+
+        Parameters
+        ----------
+        p : int
+            The number of QAOA layers (depth of the circuit).
+        gamma : list, optional
+            A list of gamma parameters for each layer. If None, initializes randomly.
+        beta : list, optional
+            A list of beta parameters for each layer. If None, initializes randomly.
+
+        Returns
+        -------
+        circuit : qibo.models.QAOA
+            A QAOA circuit for the QUBO problem.
+        """
+        # Convert QUBO to Ising Hamiltonian
+        h, J, constant = self.qubo_to_ising()
+
+        # Create the Ising Hamiltonian using Qibo
+        symbolic_ham = sum(h[i] * Z(i) for i in h)
+        symbolic_ham += sum(J[(u, v)] * Z(u) * Z(v) for (u, v) in J)
+
+        # Define the QAOA model
+        hamiltonian = SymbolicHamiltonian(symbolic_ham)
+        qaoa = QAOA(hamiltonian)
+
+        # Optionally set parameters
+        if params is not None:
+            qaoa.set_parameters(params)
+
+        return qaoa
+
+
+
+
 
 
 class linear_problem:
