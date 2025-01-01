@@ -1,10 +1,13 @@
 import itertools
+import random
+import math
 
 import numpy as np
 from qibo import hamiltonians, gates
 from qibo.models import QAOA, Circuit
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.symbols import Z
+from qibo.optimizers import optimize
 
 
 class QUBO:
@@ -501,6 +504,91 @@ class QUBO:
             return build(circuit, gammas, betas, alphas)
         return build(circuit, gammas, betas)
 
+    def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla', alpha=0.25):
+        gammas = [random.uniform(0,2*math.pi) for i in range(p)]
+        betas = [random.uniform(0,2*math.pi) for i in range(p)]
+        if regular_QAOA:
+            circuit = self.qubo_to_qaoa_circuit(self, gammas, betas)
+            n_params = 2*p
+            parameters = []
+            for i in range(p):
+                parameters.append(gammas[i])
+                parameters.append(betas[i])
+        else:
+            alphas = [random.uniform(0,2*math.pi) for i in range(p)]
+            circuit = self.qubo_to_qaoa_circuit(self, gammas, betas, alphas)
+            n_params = 3*p
+            parameters = []
+            for i in range(p):
+                parameters.append(gammas[i])
+                parameters.append(betas[i])
+                parameters.append(alphas[i])
+        # we have prepared the circuit, now we want to train them
+
+        if regular_loss:
+            def myloss(parameters):
+                # parameters to be optimize is the input, the output is a counter object
+                circuit.set_parameters(parameters)
+                result = circuit(nshots)
+                result_counter = result.frequencies(binary=True)
+                energy_dict = itertools.defaultdict(int)
+                for key, value in result_counter:
+                    # key is the binary string, value is the frequencies
+                    x = [int(sub_key) for sub_key in key]
+                    energy_dict[self.evaluate_f(x)] += value
+                loss = sum(key*value/nshots for key, value in energy_dict)
+                return loss
+
+
+        else:
+            def myloss(parameters, alpha=0.1):
+                """
+                Compute the CVaR of the energy distribution for a given quantile threshold `alpha`.
+
+                Parameters:
+                - parameters: The parameters to set in the circuit.
+                - alpha: The quantile threshold (default is 0.1 for 10%).
+
+                Returns:
+                - CVaR: The computed CVaR value.
+                """
+                circuit.set_parameters(parameters)
+                result = circuit(nshots)
+                result_counter = result.frequencies(binary=True)
+
+                energy_dict = itertools.defaultdict(int)
+                for key, value in result_counter.items():
+                    # key is the binary string, value is the frequency
+                    x = [int(sub_key) for sub_key in key]
+                    energy_dict[self.evaluate_f(x)] += value
+
+                # Normalize frequencies to probabilities
+                total_counts = sum(energy_dict.values())
+                energy_probs = {key: value / total_counts for key, value in energy_dict.items()}
+
+                # Sort energies and compute cumulative probability
+                sorted_energies = sorted(energy_probs.items())  # List of (energy, probability)
+                cumulative_prob = 0
+                selected_energies = []
+
+                for energy, prob in sorted_energies:
+                    if cumulative_prob + prob > alpha:
+                        # Include only the fraction of the probability needed to reach `alpha`
+                        excess_prob = alpha - cumulative_prob
+                        selected_energies.append((energy, excess_prob))
+                        cumulative_prob = alpha
+                        break
+                    else:
+                        selected_energies.append((energy, prob))
+                        cumulative_prob += prob
+
+                # Compute CVaR as weighted average of selected energies
+                cvar = sum(energy * prob for energy, prob in selected_energies) / alpha
+                return cvar
+        best, params, extra = optimize(myloss, parameters, method=method, options={'maxiter': maxiter})
+        circuit.set_parameters(params)
+        result = circuit(nshots)
+        return result.frequencies(binary=True)
 
     def qubo_to_qaoa_object(self,params: list = None):
         """
@@ -534,8 +622,8 @@ class QUBO:
         # Optionally set parameters
         if params is not None:
             qaoa.set_parameters(params)
-
         return qaoa
+
 
 
 
