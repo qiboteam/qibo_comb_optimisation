@@ -1,6 +1,7 @@
 import itertools
 import random
 import math
+from collections import defaultdict
 
 import numpy as np
 from qibo import hamiltonians, gates
@@ -86,7 +87,7 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
-            self.h , self.J, self.ising_constant = self.QUBO_to_ising(self.Qdict)
+            self.h , self.J, self.ising_constant = self.qubo_to_ising(self.Qdict)
         else:
             h = args[0]
             J = args[1]
@@ -110,7 +111,7 @@ class QUBO:
 
         Parameters
         ----------
-        scalar : float
+        scalar_multiplier : float
             The scalar value by which to multiply the coefficients.
 
         Example
@@ -149,16 +150,7 @@ class QUBO:
 
         .. math::
 
-             x'  Q  x  = constant + s'  J  s + h'  s
-
-        Args:
-            Q (dict[(variable, variable), coefficient]):
-                QUBO coefficients in a dict of form {(u, v): coefficient, ...}, where keys
-                are 2-tuples of variables of the model and values are biases
-                associated with the pair of variables. Tuples (u, v) represent interactions
-                and (v, v) linear biases.
-            constant:
-                Constant offset to be applied to the energy. Default 0.
+             x'  Q  x  = constant + s'  J  s + h'
 
         Returns:
             (dict, dict, float): A 3-tuple containing:
@@ -402,40 +394,6 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self,params: list = None):
-        """
-        Generates a QAOA circuit for the QUBO problem.
-
-        Parameters
-        ----------
-        p : int
-            The number of QAOA layers (depth of the circuit).
-        gamma : list, optional
-            A list of gamma parameters for each layer. If None, initializes randomly.
-        beta : list, optional
-            A list of beta parameters for each layer. If None, initializes randomly.
-
-        Returns
-        -------
-        circuit : qibo.models.QAOA
-            A QAOA circuit for the QUBO problem.
-        """
-        # Convert QUBO to Ising Hamiltonian
-        h, J, constant = self.qubo_to_ising()
-
-        # Create the Ising Hamiltonian using Qibo
-        symbolic_ham = sum(h[i] * Z(i) for i in h)
-        symbolic_ham += sum(J[(u, v)] * Z(u) * Z(v) for (u, v) in J)
-
-        # Define the QAOA model
-        hamiltonian = SymbolicHamiltonian(symbolic_ham)
-        qaoa = QAOA(hamiltonian)
-
-        # Optionally set parameters
-        if params is not None:
-            qaoa.set_parameters(params)
-
-        return qaoa
 
     def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None):
         """
@@ -443,8 +401,9 @@ class QUBO:
 
             Parameters
             ----------
-            p : int
-                The number of QAOA layers (repetition of the alternating unitary blocks).
+            gammas: parameters for phasers
+            betas: parameters for X mixers
+            alphas: parameters for Y mixers
 
             Returns
             -------
@@ -461,16 +420,16 @@ class QUBO:
             """
             # Apply R_z for diagonal terms (h_i)
             for i in range(self.n):
-                circuit.rz(-2 * gamma * self.h[i], i)  # -2 * gamma * h_i
+                circuit.add(gates.RZ(i, -2 * gamma * self.h[i]) ) # -2 * gamma * h_i
 
             # Apply CNOT and R_z for off-diagonal terms (J_ij)
             for i in range(self.n):
                 for j in range(self.n):
                     weight = self.J[i, j]
                     if weight != 0:
-                        circuit.cx(i, j)
-                        circuit.rz(-2 * gammas * weight, j)  # -2 * gamma * J_ij
-                        circuit.cx(i, j)
+                        circuit.add(gates.CNOT(i, j))
+                        circuit.add(gates.RZ(j, -2 * gammas * weight))  # -2 * gamma * J_ij
+                        circuit.add(gates.CNOT(i, j))
 
 
         def mixer(circuit, beta, alpha=None):
@@ -479,9 +438,9 @@ class QUBO:
             This step applies RX rotations on each qubit to spread the superposition.
             """
             for i in range(self.n):
-                circuit.rx(2 * beta, i)  # Apply RX gates for mixer
+                circuit.add(gates.RX(i, 2*beta))  # Apply RX gates for mixer
                 if alpha:
-                    circuit.ry(2*alpha, i)
+                    circuit.add(gates.RY(i, 2*alpha))
 
 
         def build(circuit, gammas, betas, alphas=None):
@@ -490,7 +449,7 @@ class QUBO:
             """
             # Apply initial Hadamard gates (uniform superposition)
             for i in range(self.n):
-                circuit.h(i)
+                circuit.add(gates.H(i))
 
             for layer in range(p):
                 phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
@@ -531,7 +490,7 @@ class QUBO:
                 circuit.set_parameters(parameters)
                 result = circuit(nshots)
                 result_counter = result.frequencies(binary=True)
-                energy_dict = itertools.defaultdict(int)
+                energy_dict = defaultdict(int)
                 for key, value in result_counter:
                     # key is the binary string, value is the frequencies
                     x = [int(sub_key) for sub_key in key]
@@ -556,7 +515,7 @@ class QUBO:
                 result = circuit(nshots)
                 result_counter = result.frequencies(binary=True)
 
-                energy_dict = itertools.defaultdict(int)
+                energy_dict = defaultdict(int)
                 for key, value in result_counter.items():
                     # key is the binary string, value is the frequency
                     x = [int(sub_key) for sub_key in key]
