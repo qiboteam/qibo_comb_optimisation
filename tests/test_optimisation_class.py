@@ -172,7 +172,7 @@ def test_qubo_to_qaoa_circuit():
 def test_train_QAOA_regular_loss():
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
-    qubo = QUBO(h, J)
+    qubo = QUBO(0, h, J)
 
     result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=True)
     assert isinstance(result, dict)

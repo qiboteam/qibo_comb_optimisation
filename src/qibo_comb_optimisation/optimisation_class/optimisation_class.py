@@ -501,6 +501,9 @@ class QUBO:
                 energy_dict = defaultdict(int)
                 for key in result_counter:
                     x = [int(sub_key) for sub_key in key]
+                    print("debug dict type")
+                    print(self.evaluate_f(x), type(self.evaluate_f(x)))
+                    print(result_counter[key], type(result_counter[key]))
                     energy_dict[self.evaluate_f(x)] += result_counter[key]
                 loss = sum(key*energy_dict[key]/nshots for key in energy_dict)
                 return loss
@@ -535,6 +538,9 @@ class QUBO:
                 for key in result_counter:
                     # key is the binary string, value is the frequency
                     x = [int(sub_key) for sub_key in key]
+                    print("debug dict type")
+                    print(self.evaluate_f(x), type(self.evaluate_f(x)))
+                    print(result_counter[key], type(result_counter[key]))
                     energy_dict[self.evaluate_f(x)] += result_counter[key]
 
                 # Normalize frequencies to probabilities
