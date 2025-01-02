@@ -87,10 +87,12 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
-            self.h , self.J, self.ising_constant = self.qubo_to_ising()
+            self.h, self.J, self.ising_constant = self.qubo_to_ising()
         else:
             h = args[0]
             J = args[1]
+            self.h = h
+            self.J = J
             self.Qdict = {(v, v): 2.0 * bias for v, bias in h.items()}
             self.n = 0
 
@@ -608,6 +610,12 @@ class QUBO:
 #q.train_QAOA(3, regular_QAOA=True, regular_loss=False)
 #print(q)
 
+h = {0: 1, 1: -1}
+J = {(0, 1): 0.5}
+qubo = QUBO(0, h, J)
+
+result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1)
+print(result)
 
 class linear_problem:
     """
