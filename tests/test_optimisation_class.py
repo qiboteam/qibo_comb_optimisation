@@ -1,4 +1,5 @@
 import numpy as np
+from qibo.models import Circuit
 from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
 
 # Test initialization of the QUBO class
@@ -189,7 +190,7 @@ def test_train_QAOA_cvar_loss():
 def test_qubo_to_qaoa_object():
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
-    qubo = QUBO(h, J)
+    qubo = QUBO(0, h, J)
 
     qaoa = qubo.qubo_to_qaoa_object()
     assert isinstance(qaoa, QAOA)
