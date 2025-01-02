@@ -18,7 +18,7 @@ class QUBO:
     ----------
     offset : float
         The constant offset of the QUBO problem.
-    args : dict or 2 numpy arrays
+    args*: dict or 2 numpy arrays
         A dictionary representing the quadratic coefficient for len of args is 1
         Two numpy arrays represent the coefficient for the Ising model.
     n : int
@@ -305,7 +305,7 @@ class QUBO:
         >>> best_obj_value
         -1.0
         """
-        x = np.random.randint(2, size=self.n)  # Initial solution
+        x = [random.randint(0,1) for i in range(self.n)]  # Initial solution
         best_solution = x.copy()
         best_obj_value = self.evaluate_f(x)
         tabu_list = []
@@ -363,12 +363,9 @@ class QUBO:
         vec_permutations = itertools.product([0, 1], repeat=self.n)
 
         for permutation in vec_permutations:
-            x = np.array(
-                [[var] for var in permutation]
-            )  # Converts the permutation into a column vector
-            value = self.evaluate_f(x)
+            value = self.evaluate_f(permutation)
             possible_values[value] = (
-                x  # Adds the value and its vector to the dictionary
+                permutation  # Adds the value and its vector to the dictionary
             )
 
         min_value = min(
@@ -475,7 +472,7 @@ class QUBO:
                 parameters.append(betas[i])
         else:
             alphas = [random.uniform(0,2*math.pi) for i in range(p)]
-            circuit = self.qubo_to_qaoa_circuit(self, gammas, betas, alphas)
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
             n_params = 3*p
             parameters = []
             for i in range(p):
@@ -555,13 +552,8 @@ class QUBO:
 
         Parameters
         ----------
-        p : int
-            The number of QAOA layers (depth of the circuit).
-        gamma : list, optional
-            A list of gamma parameters for each layer. If None, initializes randomly.
-        beta : list, optional
-            A list of beta parameters for each layer. If None, initializes randomly.
-
+        params : list, optional
+            parameters for QAOA
         Returns
         -------
         circuit : qibo.models.QAOA
@@ -580,7 +572,7 @@ class QUBO:
 
         # Optionally set parameters
         if params is not None:
-            qaoa.set_parameters(params)
+            qaoa.set_parameters(np.ndarray(params))
         return qaoa
 
 
@@ -649,7 +641,7 @@ class linear_problem:
 
         Parameters
         ----------
-        scalar : float
+        scalar_multiplier : float
             The scalar value to multiply the matrix A and vector b.
 
         Examples
@@ -673,7 +665,7 @@ class linear_problem:
 
         Parameters
         ----------
-        other : linear_problem
+        other_linear : linear_problem
             Another linear_problem to be added.
 
         Raises
