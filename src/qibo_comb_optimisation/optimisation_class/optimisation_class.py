@@ -447,7 +447,7 @@ class QUBO:
 
             for layer in range(p):
                 phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
-                if alphas:
+                if alphas is not None:
                     mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)
                 else:
                     mixer(circuit, betas[layer])
@@ -455,7 +455,7 @@ class QUBO:
                 circuit.add(gates.M(i))
 
             return circuit
-        if alphas:
+        if alphas is not None:
             return build(gammas, betas, alphas)
         return build(gammas, betas)
 
@@ -603,10 +603,10 @@ class QUBO:
             qaoa.set_parameters(np.ndarray(params))
         return qaoa
 
-q_dict = {(0,1):1}
-q = QUBO(0, q_dict)
-q.train_QAOA(3)
-print(q)
+#q_dict = {(0,1):1}
+#q = QUBO(0, q_dict)
+#q.train_QAOA(3, regular_QAOA=True, regular_loss=False)
+#print(q)
 
 
 class linear_problem:
