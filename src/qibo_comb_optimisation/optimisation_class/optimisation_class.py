@@ -87,7 +87,7 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
-            self.h , self.J, self.ising_constant = self.qubo_to_ising(self.Qdict)
+            self.h , self.J, self.ising_constant = self.qubo_to_ising()
         else:
             h = args[0]
             J = args[1]
@@ -184,7 +184,6 @@ class QUBO:
                 h[u] = h.setdefault(u, 0) + bias / 4
                 h[v] = h.setdefault(v, 0) + bias / 4
                 quadratic_offset += bias
-
         constant += 0.5 * linear_offset + 0.25 * quadratic_offset
 
         return h, J, constant
@@ -422,11 +421,12 @@ class QUBO:
             # Apply CNOT and R_z for off-diagonal terms (J_ij)
             for i in range(self.n):
                 for j in range(self.n):
-                    weight = self.J[i, j]
-                    if weight != 0:
-                        circuit.add(gates.CNOT(i, j))
-                        circuit.add(gates.RZ(j, -2 * gammas * weight))  # -2 * gamma * J_ij
-                        circuit.add(gates.CNOT(i, j))
+                    if (i, j) in self.J:
+                        weight = self.J[(i, j)]
+                        if weight != 0:
+                            circuit.add(gates.CNOT(i, j))
+                            circuit.add(gates.RZ(j, -2 * gamma * weight))  # -2 * gamma * J_ij
+                            circuit.add(gates.CNOT(i, j))
 
 
         def mixer(circuit, beta, alpha=None):
@@ -460,12 +460,12 @@ class QUBO:
             return build(circuit, gammas, betas, alphas)
         return build(circuit, gammas, betas)
 
-    def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla', alpha=0.25):
+    def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla', cvar_alpha=0.25):
         gammas = [random.uniform(0,2*math.pi) for i in range(p)]
         betas = [random.uniform(0,2*math.pi) for i in range(p)]
         if regular_QAOA:
-            circuit = self.qubo_to_qaoa_circuit(self, gammas, betas)
-            n_params = 2*p
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas)
+            #n_params = 2*p
             parameters = []
             for i in range(p):
                 parameters.append(gammas[i])
@@ -473,7 +473,7 @@ class QUBO:
         else:
             alphas = [random.uniform(0,2*math.pi) for i in range(p)]
             circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
-            n_params = 3*p
+            #n_params = 3*p
             parameters = []
             for i in range(p):
                 parameters.append(gammas[i])
@@ -497,7 +497,7 @@ class QUBO:
 
 
         else:
-            def myloss(parameters, alpha=0.1):
+            def myloss(parameters, alpha=cvar_alpha):
                 """
                 Compute the CVaR of the energy distribution for a given quantile threshold `alpha`.
 
@@ -575,10 +575,10 @@ class QUBO:
             qaoa.set_parameters(np.ndarray(params))
         return qaoa
 
-
-
-
-
+q_dict = {(0,1):1}
+q = QUBO(0, q_dict)
+q.train_QAOA(3)
+print(q)
 
 
 class linear_problem:

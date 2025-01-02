@@ -43,5 +43,12 @@ circuit.add(gates.M(0, 1))
 result = circuit(nshots=100)
 print(result.frequencies(binary=True))
 
+import itertools
+
+vec_permutations = itertools.product([0, 1], repeat=3)
+for permutation in vec_permutations:
+    print(permutation)
+
+
 
 
