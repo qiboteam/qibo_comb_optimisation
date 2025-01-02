@@ -1,7 +1,6 @@
 import numpy as np
 from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
 
-
 # Test initialization of the QUBO class
 def test_initialization():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
@@ -155,6 +154,46 @@ def test_combine_pairs():
     # Expected outcome after combining pairs
     expected_result = {(0, 1): 5, (1, 2): 4}
     assert result == expected_result, "canonical_q should combine (i, j) and (j, i) pairs"
+
+
+def test_qubo_to_qaoa_circuit():
+    h = {0: 1, 1: -1}
+    J = {(0, 1): 0.5}
+    qubo = QUBO(h, J)
+
+    gammas = [0.1, 0.2]
+    betas = [0.3, 0.4]
+    circuit = qubo.qubo_to_qaoa_circuit(gammas, betas)
+
+    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == qubo.n
+
+def test_train_QAOA_regular_loss():
+    h = {0: 1, 1: -1}
+    J = {(0, 1): 0.5}
+    qubo = QUBO(h, J)
+
+    result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=True)
+    assert isinstance(result, dict)
+    assert "00" in result and "11" in result
+
+def test_train_QAOA_cvar_loss():
+    h = {0: 1, 1: -1}
+    J = {(0, 1): 0.5}
+    qubo = QUBO(h, J)
+
+    result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1)
+    assert isinstance(result, dict)
+    assert "00" in result and "11" in result
+
+def test_qubo_to_qaoa_object():
+    h = {0: 1, 1: -1}
+    J = {(0, 1): 0.5}
+    qubo = QUBO(h, J)
+
+    qaoa = qubo.qubo_to_qaoa_object()
+    assert isinstance(qaoa, QAOA)
+    assert hasattr(qaoa, 'hamiltonian')
 
 
 def test_linear_initialization():
