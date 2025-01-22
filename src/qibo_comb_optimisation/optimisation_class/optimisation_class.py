@@ -175,7 +175,7 @@ class QUBO:
         linear_offset = 0.0
         quadratic_offset = 0.0
 
-        for (u, v), bias in self.Qdict.items():
+        for (u, v), bias in self.J.items():
             if u == v:
                 h[u] = h.setdefault(u, 0) + bias / 2
                 linear_offset += bias
