@@ -97,7 +97,7 @@ class QUBO:
             self.n = 0
 
             # next the optimisation_class biases
-            for (u, v), bias in self.Qdict.items():
+            for (u, v), bias in J.items():
                 if bias != 0:
                     self.Qdict[(u, v)] = 4.0 * bias
                     self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2.0 * bias
@@ -175,7 +175,7 @@ class QUBO:
         linear_offset = 0.0
         quadratic_offset = 0.0
 
-        for (u, v), bias in self.J.items():
+        for (u, v), bias in self.Qdict.items():
             if u == v:
                 h[u] = h.setdefault(u, 0) + bias / 2
                 linear_offset += bias
@@ -242,9 +242,9 @@ class QUBO:
                 # manage diagonal term first
                 if (i, i) in self.Qdict:
                     f_value += self.Qdict[(i, i)]
-                    for j in range(i + 1, self.n):
-                        if x[j] != 0:
-                            f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
+                for j in range(i + 1, self.n):
+                    if x[j] != 0:
+                        f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
                                 (j, i), 0
                             )
         return f_value
