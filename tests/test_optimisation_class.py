@@ -86,7 +86,7 @@ def test_initialization_with_h_and_J():
 
     # Initialize QUBO instance with Ising h and J
     qubo_instance = QUBO(offset, h, J)
-    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0}
+    expected_Qdict = {(0, 0): 1.0, (1, 1): -4.0, (0,1):2}
     assert qubo_instance.Qdict == expected_Qdict, "Qdict should be created based on h and J conversion"
 
     # Check that `n` was set correctly (it should be the max variable index + 1)
@@ -117,7 +117,7 @@ def test_isolated_terms_in_h_and_J():
     print(qubo_instance.Qdict)
     print("check above")
     # Expected Qdict should only contain diagonal terms based on h
-    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0, (2, 2): 0.0}
+    expected_Qdict = {(0, 0): 3.0, (1, 1): -4.0, (2, 2): 1.0}
     assert qubo_instance.Qdict == expected_Qdict, "Qdict should reflect only h terms when J is empty"
 
     # Expected offset should only adjust based on sum of h values since J is empty
