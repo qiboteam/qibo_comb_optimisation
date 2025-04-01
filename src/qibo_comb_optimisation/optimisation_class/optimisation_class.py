@@ -462,6 +462,22 @@ class QUBO:
         return build(gammas, betas)
 
     def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla', cvar_alpha=0.25):
+        '''
+
+        Parameters
+        ----------
+        p: number of layers
+        nshots: number of shots
+        regular_QAOA: if True, it is the vanilla QAOA, otherwise, we use XQAOA
+        regular_loss: if true, we minimize the expected value, otherwise, we minimize cvar
+        maxiter: maximum iterations
+        method: classical optimizer
+        cvar_alpha: if cvar is used, this is the alpha
+
+        Returns frequencies
+        -------
+
+        '''
         gammas = [random.uniform(0,2*math.pi) for i in range(p)]
         betas = [random.uniform(0,2*math.pi) for i in range(p)]
         if regular_QAOA:
