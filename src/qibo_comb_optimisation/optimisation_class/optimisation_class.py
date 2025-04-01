@@ -390,7 +390,7 @@ class QUBO:
         return self.Qdict
 
 
-    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None):
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, mixer_function=None):
         """
             Constructs a QAOA circuit for the given QUBO problem.
 
@@ -399,6 +399,7 @@ class QUBO:
             gammas: parameters for phasers
             betas: parameters for X mixers
             alphas: parameters for Y mixers
+            mixer_function: optional function that constructs the mixer circuit
 
             Returns
             -------
@@ -427,7 +428,7 @@ class QUBO:
                             circuit.add(gates.CNOT(i, j))
 
 
-        def mixer(circuit, beta, alpha=None):
+        def default_mixer(circuit, beta, alpha=None):
             """
             Apply the mixer layer (uniform superposition evolution).
             This step applies RX rotations on each qubit to spread the superposition.
@@ -449,10 +450,13 @@ class QUBO:
 
             for layer in range(p):
                 phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
-                if alphas is not None:
-                    mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)
+                if mixer_function:
+                    mixer_function(circuit, betas[layer])
                 else:
-                    mixer(circuit, betas[layer])
+                    if alphas is not None:
+                        default_mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)
+                    else:
+                        default_mixer(circuit, betas[layer])
             for i in range(self.n):
                 circuit.add(gates.M(i))
 
@@ -461,7 +465,8 @@ class QUBO:
             return build(gammas, betas, alphas)
         return build(gammas, betas)
 
-    def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla', cvar_alpha=0.25):
+    def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla',
+                   cvar_alpha=0.25, mixer_function = None):
         '''
 
         Parameters
@@ -473,6 +478,7 @@ class QUBO:
         maxiter: maximum iterations
         method: classical optimizer
         cvar_alpha: if cvar is used, this is the alpha
+        mixer_function: function defining a custom mixer (optional)
 
         Returns frequencies
         -------
@@ -506,7 +512,7 @@ class QUBO:
                 if regular_QAOA:
                     gammas = parameters[:m//2]
                     betas = parameters[m//2:]
-                    circuit = self.qubo_to_qaoa_circuit(gammas, betas)
+                    circuit = self.qubo_to_qaoa_circuit(gammas, betas, mixer_function=mixer_function)
                 else:
                     gammas = parameters[:m//3]
                     betas = parameters[m//3: 2*m//3]
