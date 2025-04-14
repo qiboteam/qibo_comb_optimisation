@@ -67,6 +67,12 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> qp.Qdict
         {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+
+        >>> h = {3: 1.0, 4: 0.82, 5: 0.23}
+        >>> J = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+        >>> qp = QUBO(0, h, J)
+        >>> qp.Qdict
+        ({3: 1.0, 4: 0.82, 5: 0.23}, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
         """
 
         self.offset = offset
@@ -93,7 +99,7 @@ class QUBO:
             # finally adjust the offset based on QUBO definitions rather than Ising formulation
             self.offset += sum(J.values()) - sum(h.values())
         else:
-            raise_error(ValueError, "Invalid input for QUBO.")
+            raise_error(TypeError, "Invalid input for QUBO.")
 
     def multiply_scalar(self, scalar_multiplier):
         """Multiplies all the quadratic coefficients by a scalar value.
