@@ -15,7 +15,7 @@ from qibo_comb_optimisation.optimisation_class.optimisation_class import (
 )
 
 
-def calculate_two_to_one(num_cities):
+def _calculate_two_to_one(num_cities):
     """
     Calculates a mapping from two coordinates to one coordinate for the TSP problem.
 
@@ -28,7 +28,7 @@ def calculate_two_to_one(num_cities):
     return np.arange(num_cities**2).reshape(num_cities, num_cities)
 
 
-def tsp_phaser(distance_matrix, backend=None):
+def _tsp_phaser(distance_matrix, backend=None):
     """
     Constructs the phaser Hamiltonian for the Traveling Salesman Problem (TSP).
 
@@ -40,7 +40,7 @@ def tsp_phaser(distance_matrix, backend=None):
         SymbolicHamiltonian: The phaser Hamiltonian for TSP.
     """
     num_cities = distance_matrix.shape[0]
-    two_to_one = calculate_two_to_one(num_cities)
+    two_to_one = _calculate_two_to_one(num_cities)
     form = 0
     for i in range(num_cities):
         for u in range(num_cities):
@@ -55,7 +55,7 @@ def tsp_phaser(distance_matrix, backend=None):
     return ham
 
 
-def tsp_mixer(num_cities, backend=None):
+def _tsp_mixer(num_cities, backend=None):
     """
     Constructs the mixer Hamiltonian for the Traveling Salesman Problem (TSP).
 
@@ -67,7 +67,7 @@ def tsp_mixer(num_cities, backend=None):
         SymbolicHamiltonian: The mixer Hamiltonian for TSP.
     """
 
-    two_to_one = calculate_two_to_one(num_cities)
+    two_to_one = _calculate_two_to_one(num_cities)
 
     def splus(u, i):
         """
@@ -207,7 +207,7 @@ class TSP:
 
         self.distance_matrix = distance_matrix
         self.num_cities = distance_matrix.shape[0]
-        self.two_to_one = calculate_two_to_one(self.num_cities)
+        self.two_to_one = _calculate_two_to_one(self.num_cities)
 
     def hamiltonians(self):
         """
@@ -217,8 +217,8 @@ class TSP:
             tuple: A tuple containing the phaser and mixer Hamiltonians.
         """
         return (
-            tsp_phaser(self.distance_matrix, backend=self.backend),
-            tsp_mixer(self.num_cities, backend=self.backend),
+            _tsp_phaser(self.distance_matrix, backend=self.backend),
+            _tsp_mixer(self.num_cities, backend=self.backend),
         )
 
     def prepare_initial_state(self, ordering):

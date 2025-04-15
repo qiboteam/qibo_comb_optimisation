@@ -3,75 +3,76 @@ import itertools
 import numpy as np
 from qibo import hamiltonians
 from qibo.symbols import Z
+from qibo.config import raise_error
 
 
 class QUBO:
-    """
-    A class used to represent either a Quadratic Unconstrained Binary Optimization (QUBO) problem or Ising model.
-    Attributes
-    ----------
-    offset : float
-        The constant offset of the QUBO problem.
-    args : dict or 2 numpy arrays
-        A dictionary representing the quadratic coefficient for len of args is 1
-        Two numpy arrays represent the coefficient for the Ising model.
-    n : int
-        Number of variables involved in the problem.
+    """A class used to represent either a Quadratic Unconstrained Binary Optimization (QUBO)
+        problem or Ising model.
 
-    Methods
-    -------
-    multiply_scalar(scalar: float):
-        Multiplies all the coefficients by a scalar value.
+    Args:
+        offset (float): The constant offset of the QUBO problem.
+        args (dict or numpy arrays): If len(args)==1, args is a dictionary representing the
+            quadratic coefficient of QUBO. If len(args)==2, args is a list of two dictionaries
+            representing the coefficients for the Ising model.
+        n (int): Number of variables involved in the problem.
 
-    qubo_to_ising() -> Tuple[dict, dict, float]:
-        Converts the QUBO problem into Ising model parameters.
+    Methods:
+        multiply_scalar(scalar: float):
+            Multiplies all the coefficients by a scalar value.
 
-    evaluate_f(x: List[int]) -> float:
-        Evaluates the quadratic function for a given binary vector.
+        qubo_to_ising() -> Tuple[dict, dict, float]:
+            Converts the QUBO problem into Ising model parameters.
 
-    evaluate_grad_f(x: List[int]) -> List[float]:
-        Evaluates the gradient of the quadratic function at a given binary vector.
+        evaluate_f(x: List[int]) -> float:
+            Evaluates the quadratic function for a given binary vector.
 
-    tabu_search(max_iterations: int, tabu_size: int) -> Tuple[List[int], float]:
-        Solves the QUBO problem using the Tabu search algorithm.
+        evaluate_grad_f(x: List[int]) -> List[float]:
+            Evaluates the gradient of the quadratic function at a given binary vector.
 
-    brute_force() -> Tuple[List[int], float]:
-        Solves the QUBO problem by exhaustively evaluating all possible solutions.
+        tabu_search(max_iterations: int, tabu_size: int) -> Tuple[List[int], float]:
+            Solves the QUBO problem using the Tabu search algorithm.
+
+        brute_force() -> Tuple[List[int], float]:
+            Solves the QUBO problem by exhaustively evaluating all possible solutions.
     """
 
     def __init__(self, offset, *args):
-        """
-        Initializes the QUBO class
+        """Initializes the QUBO class
 
-        Parameters
-        ________
-
-        offset : float
-            The constant offset of the QUBO problem.
-        args: this can be of length 1 or length 2.
-             If the length is one, it takes in a dictionary and it will be assigned to the QDict object, the coefficeint
-             of QUBO. It represents the matrix Q.
-             If the length is 2, it takes in h and J respectively for Ising formulation.
-
-             We have the following relation
-
-                .. math::
-
-             s'  J  s + h'  s = offset + x'  Q x
         Args:
-            h (dict[variable, bias]):
-                Linear biases as a dict of the form {v: bias, ...}, where keys are variables of
-                the model and values are biases.
-            J (dict[(variable, variable), bias]):
-               Quadratic biases as a dict of the form {(u, v): bias, ...}, where keys
-               are 2-tuples of variables of the model and values are optimisation_class biases
-               associated with the pair of variables (the interaction).
+            offset (float): The constant offset of the QUBO problem.
+            args (dict or np.ndarray): Input for parameters for QUBO or Ising formulation.
+                 If len(args)==1, args needs to be a dictionary representing the quadratic
+                 coefficient assigned to the QDict object. It represents the matrix Q.
+                 If len(args)==2, arg needs to be a list of two dictionaries representing the
+                 inputs h and J for Ising formulation.
+
+                 We have the following relation
+
+                    .. math::
+
+                     s'  J  s + h'  s = offset + x'  Q x
+
+                 where
+                    h (dict[variable, bias]): Linear biases as a dict of the form {v: bias, ...},
+                        where keys are variables of the model and values are biases.
+                    J (dict[(variable, variable), bias]): Quadratic biases as a dict of the form
+                        {(u, v): bias, ...}, where keys are 2-tuples of variables of the model
+                        and values are optimisation_class biases associated with the pair of
+                        variables (the interaction).
         Example
         -------
         >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
         >>> qp = QUBO(0, Qdict)
         >>> qp.Qdict
         {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+
+        >>> h = {3: 1.0, 4: 0.82, 5: 0.23}
+        >>> J = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+        >>> qp = QUBO(0, h, J)
+        >>> qp.Qdict
+        ({3: 1.0, 4: 0.82, 5: 0.23}, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
         """
 
         self.offset = offset
@@ -81,7 +82,7 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
-        else:
+        elif len(args) == 2 and isinstance(args[0], dict) and isinstance(args[1], dict):
             h = args[0]
             J = args[1]
             self.Qdict = {(v, v): 2.0 * bias for v, bias in h.items()}
@@ -97,15 +98,14 @@ class QUBO:
             self.n += 1
             # finally adjust the offset based on QUBO definitions rather than Ising formulation
             self.offset += sum(J.values()) - sum(h.values())
+        else:
+            raise_error(TypeError, "Invalid input for QUBO.")
 
     def multiply_scalar(self, scalar_multiplier):
-        """
-        Multiplies all the quadratic coefficients by a scalar value.
+        """Multiplies all the quadratic coefficients by a scalar value.
 
-        Parameters
-        ----------
-        scalar : float
-            The scalar value by which to multiply the coefficients.
+        Args:
+            scalar_multiplier (float): The scalar value by which to multiply the coefficients.
 
         Example
         -------
@@ -121,8 +121,10 @@ class QUBO:
 
     def __add__(self, other_Quadratic):
         """
-        :param other_Quadratic: another optimisation_class class object
-        :return: updating the optimisation_class function to obtain the sum
+        Args:
+            other_Quadratic: another optimisation_class class object
+        Returns: 
+            Updating the optimisation_class function to obtain the sum
         """
         for key in other_Quadratic.Qdict:
             if key in self.Qdict:
@@ -135,40 +137,33 @@ class QUBO:
     def qubo_to_ising(self, constant=0.0):
         """Convert a QUBO problem to an Ising problem.
 
-        Map a optimisation_class unconstrained binary optimisation (QUBO) problem  defined over binary variables
-        (0 or 1 values), where the linear term is contained along x' Qx
+        Map a optimisation_class unconstrained binary optimisation (QUBO) problem defined over
+        binary variables (0 or 1 values), where the linear term is contained along x' Qx
         the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
-        Return h and J that define the Ising model as well as the offset in energy
-        between the two problem formulations:
+        Returns `h` and `J` that define the Ising model as well as `constant` representing the
+        offset in energy between the two problem formulations.
 
         .. math::
 
              x'  Q  x  = constant + s'  J  s + h'  s
 
         Args:
-            Q (dict[(variable, variable), coefficient]):
-                QUBO coefficients in a dict of form {(u, v): coefficient, ...}, where keys
-                are 2-tuples of variables of the model and values are biases
-                associated with the pair of variables. Tuples (u, v) represent interactions
-                and (v, v) linear biases.
-            constant:
-                Constant offset to be applied to the energy. Default 0.
+            Q (dict[(variable, variable), coefficient]): QUBO coefficients in a dict of form
+                {(u, v): coefficient, ...}, where keys are 2-tuples of variables of the model
+                and values are biases associated with the pair of variables. Tuples (u, v)
+                represent interactions and (v, v) linear biases.
+            constant (float): Constant offset to be applied to the energy. Defaults to 0.
 
         Returns:
             (dict, dict, float): A 3-tuple containing:
+            h (dict): Linear coefficients of the Ising problem.
+            J (dict): Quadratic coefficients of the Ising problem.
+            constant (float): The new energy offset.
 
-                dict: Linear coefficients of the Ising problem.
-
-                dict: Quadratic coefficients of the Ising problem.
-
-                float: New energy offset.
-
-        Examples:
+        Example:
             This example converts a QUBO problem of two variables that have positive
             biases of value 1 and are positively coupled with an interaction of value 1
             to an Ising problem, and shows the new energy offset.
-
-
         """
         h = {}
         J = {}
@@ -192,8 +187,7 @@ class QUBO:
         return h, J, constant
 
     def construct_symbolic_Hamiltonian_from_QUBO(self):
-        """
-        Constructs a symbolic Hamiltonian from the QUBO problem by converting it
+        """Constructs a symbolic Hamiltonian from the QUBO problem by converting it
         to an Ising model.
 
         The method calls the qubo_to_ising function to convert the QUBO formulation
@@ -201,7 +195,8 @@ class QUBO:
         a symbolic Hamiltonian using the qibo library.
 
         Returns:
-            A symbolic Hamiltonian that corresponds to the QUBO problem.
+            ham (`qibo.hamiltonians.hamiltonians.SymbolicHamiltonian`): A symbolic
+                Hamiltonian that corresponds to the QUBO problem.
         """
         # Correct the call to qubo_to_ising (no need to pass self.Qdict)
         h, J, constant = self.qubo_to_ising()
@@ -216,18 +211,13 @@ class QUBO:
         return ham
 
     def evaluate_f(self, x):
-        """
-        Evaluates the quadratic function for a given binary vector.
+        """Evaluates the quadratic function for a given binary vector.
 
-        Parameters
-        ----------
-        x : list of int
-            A binary vector for which to evaluate the function.
+        Args:
+            x (list): A list representing the binary vector for which to evaluate the function.
 
-        Returns
-        -------
-        float
-            The evaluated function value.
+        Returns:
+            f_value (float): The evaluated function value.
 
         Example
         -------
@@ -251,18 +241,13 @@ class QUBO:
         return f_value
 
     def evaluate_grad_f(self, x):
-        """
-        Evaluates the gradient of the quadratic function at a given binary vector.
+        """Evaluates the gradient of the quadratic function at a given binary vector.
 
-        Parameters
-        ----------
-        x : list of int
-            A binary vector for which to evaluate the gradient.
+        Args:
+            x (list): A list representing the binary vector for which to evaluate the gradient.
 
-        Returns
-        -------
-        list of float
-            The gradient vector.
+        Returns:
+            grad (list): List of float representing the gradient vector.
 
         Example
         -------
@@ -280,22 +265,16 @@ class QUBO:
         return grad
 
     def tabu_search(self, max_iterations=100, tabu_size=10):
-        """
-        Solves the QUBO problem using the Tabu search algorithm.
+        """Solves the QUBO problem using the Tabu search algorithm.
 
-        Parameters
-        ----------
-        max_iterations : int
-            Maximum number of iterations to run the Tabu search.
-        tabu_size : int
-            Size of the Tabu list.
+        Args:
+            max_iterations (int): Maximum number of iterations to run the Tabu search.
+                Defaults to 100.
+            tabu_size (int): Size of the Tabu list.
 
-        Returns
-        -------
-        best_solution : list of int
-            The best binary vector found.
-        best_obj_value : float
-            The corresponding objective value.
+        Returns:
+            best_solution (list): List of ints representing the best binary vector found.
+            best_obj_value (float): The corresponding objective value.
 
         Example
         -------
@@ -340,15 +319,12 @@ class QUBO:
         return best_solution, best_obj_value
 
     def brute_force(self):
-        """
-        Solves the QUBO problem by evaluating all possible binary vectors. Note that this approach is very slow.
+        """Solves the QUBO problem by evaluating all possible binary vectors.
+            Note that this approach is very slow.
 
-        Returns
-        -------
-        opt_vector : list of int
-            The optimal binary vector.
-        min_value : float
-            The minimum value of the objective function.
+        Returns:
+            opt_vector (list): List of ints representing the optimal binary vector.
+            min_value (float): The minimum value of the objective function.
 
         Example
         -------
@@ -383,9 +359,10 @@ class QUBO:
         return opt_vector, min_value
 
     def canonical_q(self):
-        """
-        We want to keep non-zero component when i < j.
-        :return: a dictionary and also update Qdict
+        """We want to keep non-zero component when i < j.
+        
+        Returns:
+            self.Qdict (dict): A dictionary and also update Qdict
         """
         for i in range(self.n):
             for j in range(i, self.n):
@@ -396,47 +373,35 @@ class QUBO:
 
 
 class linear_problem:
-    """
-    A class used to represent a linear problem of the form Ax + b.
+    """A class used to represent a linear problem of the form Ax + b.
 
-    Attributes
-    ----------
-    A : np.ndarray
-        Coefficient matrix.
-    b : np.ndarray
-        Constant vector.
-    n : int
-        Dimension of the problem, inferred from the size of b.
+    Args:
+        A (np.ndarray): Coefficient matrix.
+        b (np.ndarray): Constant vector.
+        n (int): Dimension of the problem, inferred from the size of b.
 
-    Methods
-    -------
-    multiply_scalar(scalar):
-        Multiplies the matrix A and vector b by a scalar.
+    Methods:
+        multiply_scalar(scalar):
+            Multiplies the matrix A and vector b by a scalar.
 
-    __add__(other):
-        Adds another linear_problem to the current one.
+        __add__(other):
+            Adds another linear_problem to the current one.
 
-    evaluate_f(x):
-        Evaluates the linear function at a given point x.
+        evaluate_f(x):
+            Evaluates the linear function at a given point x.
 
-    square():
-        Squares the linear problem, returning a quadratic problem.
+        square():
+            Squares the linear problem, returning a quadratic problem.
     """
 
     def __init__(self, A, b):
-        """
-        Initializes the linear problem.
+        """Initializes the linear problem.
 
-        Parameters
-        ----------
-        A : np.ndarray
-            Coefficient matrix.
-        b : np.ndarray
-            Constant vector.
+        Args:
+            A (np.ndarray): Coefficient matrix.
+            b (np.ndarray): Constant vector.
 
-        Raises
-        ------
-        ValueError
+        # TODO: Raises: ValueError
             If A and b have incompatible dimensions.
 
         Examples
@@ -450,13 +415,10 @@ class linear_problem:
         self.n = self.A.shape[1]
 
     def multiply_scalar(self, scalar_multiplier):
-        """
-        Multiplies the matrix A and vector b by a scalar.
+        """Multiplies the matrix A and vector b by a scalar.
 
-        Parameters
-        ----------
-        scalar : float
-            The scalar value to multiply the matrix A and vector b.
+        Args:
+            scalar (float): The scalar value to multiply the matrix A and vector b.
 
         Examples
         --------
@@ -474,17 +436,12 @@ class linear_problem:
         self.b *= scalar_multiplier
 
     def __add__(self, other_linear):
-        """
-        Adds another linear_problem to the current one.
+        """Adds another linear_problem to the current one.
 
-        Parameters
-        ----------
-        other : linear_problem
-            Another linear_problem to be added.
+        Args:
+            other_linear (linear_problem): Another linear_problem to be added.
 
-        Raises
-        ------
-        ValueError
+        # TODO: Raises: ValueError
             If the dimensions of the two linear problems do not match.
 
         Examples
@@ -507,18 +464,13 @@ class linear_problem:
         return self
 
     def evaluate_f(self, x):
-        """
-        Evaluates the linear function Ax + b at a given point x.
+        """Evaluates the linear function Ax + b at a given point x.
 
-        Parameters
-        ----------
-        x : np.ndarray
-            Input vector at which to evaluate the linear function.
+        Args:
+            x (np.ndarray): Input vector at which to evaluate the linear function.
 
-        Returns
-        -------
-        np.ndarray
-            The value of the linear function Ax + b at the given x.
+        Returns: 
+            numpy.ndarray: The value of the linear function Ax + b at the given x.
 
         Examples
         --------
@@ -533,13 +485,10 @@ class linear_problem:
         return self.A @ x + self.b
 
     def square(self):
-        """
-        Squares the linear problem to obtain a quadratic problem.
+        """Squares the linear problem to obtain a quadratic problem.
 
-        Returns
-        -------
-        QUBO
-            A quadratic problem corresponding to squaring the linear function.
+        Returns:
+            `class:QUBO`: A quadratic problem corresponding to squaring the linear function.
 
         Examples
         --------
