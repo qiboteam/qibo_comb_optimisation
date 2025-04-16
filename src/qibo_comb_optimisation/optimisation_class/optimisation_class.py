@@ -12,25 +12,25 @@ class QUBO:
 
     Args:
         offset (float): The constant offset of the QUBO problem.
-        args (dict or numpy arrays): If len(args)==1, args is a dictionary representing the
+        *args (Union[dict, List[dict]]): If len(args)==1, args is a dictionary representing the
             quadratic coefficient of QUBO. If len(args)==2, args is a list of two dictionaries
             representing the coefficients for the Ising model.
         n (int): Number of variables involved in the problem.
 
     Methods:
-        multiply_scalar(scalar: float):
+        multiply_scalar(scalar_multiplier):
             Multiplies all the coefficients by a scalar value.
 
         qubo_to_ising() -> Tuple[dict, dict, float]:
             Converts the QUBO problem into Ising model parameters.
 
-        evaluate_f(x: List[int]) -> float:
+        evaluate_f(x) -> float:
             Evaluates the quadratic function for a given binary vector.
 
-        evaluate_grad_f(x: List[int]) -> List[float]:
+        evaluate_grad_f(x) -> List[float]:
             Evaluates the gradient of the quadratic function at a given binary vector.
 
-        tabu_search(max_iterations: int, tabu_size: int) -> Tuple[List[int], float]:
+        tabu_search(max_iterations, tabu_size) -> Tuple[List[int], float]:
             Solves the QUBO problem using the Tabu search algorithm.
 
         brute_force() -> Tuple[List[int], float]:
@@ -101,7 +101,7 @@ class QUBO:
         else:
             raise_error(TypeError, "Invalid input for QUBO.")
 
-    def multiply_scalar(self, scalar_multiplier):
+    def multiply_scalar(self, scalar_multiplier: float):
         """Multiplies all the quadratic coefficients by a scalar value.
 
         Args:
@@ -214,7 +214,7 @@ class QUBO:
         """Evaluates the quadratic function for a given binary vector.
 
         Args:
-            x (list): A list representing the binary vector for which to evaluate the function.
+            x (List[int]): A list representing the binary vector for which to evaluate the function.
 
         Returns:
             f_value (float): The evaluated function value.
@@ -244,7 +244,7 @@ class QUBO:
         """Evaluates the gradient of the quadratic function at a given binary vector.
 
         Args:
-            x (list): A list representing the binary vector for which to evaluate the gradient.
+            x (List[int]): A list representing the binary vector for which to evaluate the gradient.
 
         Returns:
             grad (list): List of float representing the gradient vector.
@@ -373,11 +373,15 @@ class QUBO:
 
 
 class linear_problem:
-    """A class used to represent a linear problem of the form Ax + b.
+    """A class used to represent a linear problem of the form 
+
+    .. math:: 
+
+            Ax + b
 
     Args:
-        A (np.ndarray): Coefficient matrix.
-        b (np.ndarray): Constant vector.
+        A (numpy.ndarray): Coefficient matrix.
+        b (numpy.ndarray): Constant vector.
         n (int): Dimension of the problem, inferred from the size of b.
 
     Methods:
