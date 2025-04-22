@@ -400,7 +400,7 @@ class QUBO:
             betas: parameters for X mixers
             alphas: parameters for Y mixers
             mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
-            and produce the mixer circuit
+            and produce the mixer circuit, currently we assume it takes in one parameter.
 
             Returns
             -------
