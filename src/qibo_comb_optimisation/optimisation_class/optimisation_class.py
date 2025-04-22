@@ -399,7 +399,8 @@ class QUBO:
             gammas: parameters for phasers
             betas: parameters for X mixers
             alphas: parameters for Y mixers
-            mixer_function: optional function that constructs the mixer circuit
+            mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
+            and produce the mixer circuit
 
             Returns
             -------
@@ -451,7 +452,7 @@ class QUBO:
             for layer in range(p):
                 phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
                 if mixer_function:
-                    mixer_function(circuit, betas[layer])
+                    circuit = circuit + mixer_function(betas[layer])
                 else:
                     if alphas is not None:
                         default_mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)

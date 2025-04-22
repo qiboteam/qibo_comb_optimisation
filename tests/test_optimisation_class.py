@@ -165,7 +165,6 @@ def test_qubo_to_qaoa_circuit():
     gammas = [0.1, 0.2]
     betas = [0.3, 0.4]
     circuit = qubo.qubo_to_qaoa_circuit(gammas, betas)
-
     assert isinstance(circuit, Circuit)
     assert circuit.nqubits == qubo.n
 
