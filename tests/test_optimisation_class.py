@@ -1,5 +1,5 @@
 import numpy as np
-from qibo.models import Circuit, QAOA
+import pytest
 from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
 
 # Test initialization of the QUBO class
@@ -26,6 +26,16 @@ def test_add():
     qp2 = QUBO(0, Qdict2)
     qp1 + qp2
     assert qp1.Qdict == {(0, 0): 0.0, (0, 1): 0.5, (1, 1): 2.0}
+
+
+@pytest.mark.parametrize("h, J", [
+    ({(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}, {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}),
+    ({(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}, {3: 1.0, 4: 0.82, 5: 0.23}),
+    (15, 13),
+])
+def test_invalid_input_qubo(h, J):
+    with pytest.raises(TypeError):
+        qp = QUBO(0, h, J)
 
 
 def test_qubo_to_ising():
@@ -68,7 +78,6 @@ def test_tabu_search():
     assert isinstance(best_obj_value, float)
 
 
-
 def test_brute_force():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
     qp = QUBO(0, Qdict)
@@ -77,6 +86,7 @@ def test_brute_force():
 
     assert len(opt_vector) == 2
     assert isinstance(min_value, float)
+
 
 def test_initialization_with_h_and_J():
     # Define example h and J for the Ising model
@@ -92,6 +102,7 @@ def test_initialization_with_h_and_J():
     # Check that `n` was set correctly (it should be the max variable index + 1)
     assert qubo_instance.n == 2, "n should be the number of variables (max index + 1)"
 
+
 def test_offset_calculation():
     # Define example h and J for offset calculation
     h = {0: 1.0, 1: -1.5}
@@ -106,6 +117,7 @@ def test_offset_calculation():
 
     # Verify the offset value
     assert qubo_instance.offset == expected_offset, "Offset should be adjusted based on sum of h and J values"
+
 
 def test_isolated_terms_in_h_and_J():
     # Case with no interactions (only diagonal terms in h)
@@ -123,6 +135,7 @@ def test_isolated_terms_in_h_and_J():
     # Expected offset should only adjust based on sum of h values since J is empty
     expected_offset = offset - sum(h.values())
     assert qubo_instance.offset == expected_offset, "Offset should adjust only with h values when J is empty"
+
 
 def test_consistent_terms_in_ham():
     # Run construct_symbolic_Hamiltonian_from_QUBO

@@ -5,17 +5,16 @@ description = "higher-level application developments for combinatorial optimisat
 authors = ["The Qibo team"]
 license = "Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/qiboteam/qibo-comb-optimisation/"
 packages = [{include="qibo_comb_optimisation", from="src"}]
 
-
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-qibo = ">=0.2.0"
+python = ">=3.9,<3.13"
+qibo = "^0.2.14"
 qibojit = "^0.1.5"
 
 [tool.poetry.group.analysis.dependencies]
 pylint = "^3.2.2"
-
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
