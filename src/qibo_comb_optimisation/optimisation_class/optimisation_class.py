@@ -9,6 +9,7 @@ from qibo.models import QAOA, Circuit
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.symbols import Z
 from qibo.config import raise_error
+from qibo.optimizers import optimize
 
 
 class QUBO:
@@ -424,9 +425,11 @@ class QUBO:
                     circuit.add(gates.RY(i, 2*alpha))
 
 
-        def build(gammas, betas, alphas=None):
+        def build(gammas, betas, alphas=None, mixer_function=None):
             """
             Construct the full QAOA circuit for the Ising model with p layers.
+            `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
+            If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
             """
             # Apply initial Hadamard gates (uniform superposition)
             circuit = Circuit(self.n)
@@ -435,20 +438,26 @@ class QUBO:
 
             for layer in range(p):
                 phase_separation(circuit, gammas[layer])  # Phase separation (Ising model encoding)
-                if mixer_function:
-                    circuit = circuit + mixer_function(betas[layer])
+                if alphas is not None:
+                    default_mixer(circuit, betas[layer], alphas[layer])
                 else:
-                    if alphas is not None:
-                        default_mixer(circuit, betas[layer], alphas[layer])  # Mixer (uniform superposition evolution)
+                    if mixer_function:
+                        circuit += mixer_function
                     else:
                         default_mixer(circuit, betas[layer])
+
             for i in range(self.n):
                 circuit.add(gates.M(i))
 
             return circuit
-        if alphas is not None:
+
+        if alphas is not None: # Use XQAOA, ignore mixer_function
             return build(gammas, betas, alphas)
-        return build(gammas, betas)
+        else:
+            if mixer_function:
+                return build(bammas, betas, alphas=None, mixer_function=mixer_function)
+            else:
+                return build(gammas, betas)
 
     def train_QAOA(self, p, nshots=10, regular_QAOA=True, regular_loss=True, maxiter=10, method='cobyla',
                    cvar_alpha=0.25, mixer_function = None):
