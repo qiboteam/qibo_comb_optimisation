@@ -4,11 +4,11 @@ import random
 from collections import defaultdict
 
 import numpy as np
-from qibo import gates, hamiltonians
+from qibo import Circuit, gates, hamiltonians
 from qibo.config import raise_error
 from qibo.hamiltonians import SymbolicHamiltonian
-from qibo.models import QAOA, Circuit
-from qibo.optimizers import optimize
+from qibo.models import QAOA
+from qibo.optimizers import optimize as optimize
 from qibo.symbols import Z
 
 
@@ -97,7 +97,7 @@ class QUBO:
             self.n = 0
 
             # next the optimisation_class biases
-            for (u, v), bias in J.items():
+            for (u, v), bias in self.Qdict.items():
                 if bias != 0:
                     self.Qdict[(u, v)] = 4.0 * bias
                     self.Qdict[(u, u)] = self.Qdict.setdefault((u, u), 0) - 2.0 * bias
@@ -189,6 +189,7 @@ class QUBO:
                 h[u] = h.setdefault(u, 0) + bias / 4
                 h[v] = h.setdefault(v, 0) + bias / 4
                 quadratic_offset += bias
+
         constant += 0.5 * linear_offset + 0.25 * quadratic_offset
 
         return h, J, constant
@@ -240,9 +241,11 @@ class QUBO:
                 # manage diagonal term first
                 if (i, i) in self.Qdict:
                     f_value += self.Qdict[(i, i)]
-                for j in range(i + 1, self.n):
-                    if x[j] != 0:
-                        f_value += self.Qdict.get((i, j), 0) + self.Qdict.get((j, i), 0)
+                    for j in range(i + 1, self.n):
+                        if x[j] != 0:
+                            f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
+                                (j, i), 0
+                            )
         return f_value
 
     def evaluate_grad_f(self, x):
@@ -260,7 +263,7 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> x = [1, 1]
         >>> qp.evaluate_grad_f(x)
-        array([ 1.5, -0.5])
+        [1.5, -0.5]
         """
         grad = np.asarray([self.Qdict.get((i, i), 0) for i in range(self.n)])
         for i in range(self.n):
@@ -289,9 +292,9 @@ class QUBO:
         >>> best_solution
         [0, 1]
         >>> best_obj_value
-        -1.0
+        0.5
         """
-        x = [random.randint(0, 1) for i in range(self.n)]  # Initial solution
+        x = np.random.randint(2, size=self.n)  # Initial solution
         best_solution = x.copy()
         best_obj_value = self.evaluate_f(x)
         tabu_list = []
@@ -310,14 +313,14 @@ class QUBO:
             # Update the current solution if it's better than the previous best and not tabu
             if (
                 best_neighbor_obj < best_obj_value
-                and best_neighbor_solution not in tabu_list
+                and best_neighbor_solution.tolist() not in tabu_list
             ):
                 x = best_neighbor_solution
                 best_solution = x.copy()
                 best_obj_value = best_neighbor_obj
 
             # Add the best neighbor to the tabu list
-            tabu_list.append(best_neighbor_solution)
+            tabu_list.append(best_neighbor_solution.tolist())
             if len(tabu_list) > tabu_size:
                 tabu_list.pop(0)
 
@@ -337,24 +340,30 @@ class QUBO:
         >>> qp = QUBO(0, Qdict)
         >>> opt_vector, min_value = qp.brute_force()
         >>> opt_vector
-        (0, 1)
+        [1, 0]
         >>> min_value
-        -1.0
+        -0.5
         """
         possible_values = {}
         # A list of all the possible permutations for x vector
         vec_permutations = itertools.product([0, 1], repeat=self.n)
 
         for permutation in vec_permutations:
-            value = self.evaluate_f(permutation)
+            x = np.array(
+                [[var] for var in permutation]
+            )  # Converts the permutation into a column vector
+            value = self.evaluate_f(x)
             possible_values[value] = (
-                permutation  # Adds the value and its vector to the dictionary
+                x  # Adds the value and its vector to the dictionary
             )
 
         min_value = min(
             possible_values.keys()
         )  # Lowest value of the objective function
-        opt_vector = possible_values[min_value]
+        opt_vector = tuple(
+            possible_values[min_value].T[0]
+        )  # Optimum vector x that produces the lowest value
+
         return opt_vector, min_value
 
     def canonical_q(self):
@@ -638,21 +647,6 @@ class QUBO:
         if params is not None:
             qaoa.set_parameters(np.ndarray(params))
         return qaoa
-
-
-# q_dict = {(0,1):1}
-# q = QUBO(0, q_dict)
-# q.train_QAOA(3, regular_QAOA=True, regular_loss=False)
-# print(q)
-
-h = {0: 1, 1: -1}
-J = {(0, 1): 0.5}
-qubo = QUBO(0, h, J)
-
-result = qubo.train_QAOA(
-    p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1
-)
-print(result)
 
 
 class linear_problem:

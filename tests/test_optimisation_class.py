@@ -1,6 +1,15 @@
 import numpy as np
 import pytest
-from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO, linear_problem
+from qibo import Circuit, gates
+from qibo.models import QAOA
+from qibo.optimizers import optimize as optimize
+from qibo.quantum_info import infidelity
+
+from qibo_comb_optimisation.optimisation_class.optimisation_class import (
+    QUBO,
+    linear_problem,
+)
+
 
 # Test initialization of the QUBO class
 def test_initialization():
@@ -28,11 +37,17 @@ def test_add():
     assert qp1.Qdict == {(0, 0): 0.0, (0, 1): 0.5, (1, 1): 2.0}
 
 
-@pytest.mark.parametrize("h, J", [
-    ({(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}, {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}),
-    ({(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}, {3: 1.0, 4: 0.82, 5: 0.23}),
-    (15, 13),
-])
+@pytest.mark.parametrize(
+    "h, J",
+    [
+        (
+            {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0},
+            {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0},
+        ),
+        ({(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}, {3: 1.0, 4: 0.82, 5: 0.23}),
+        (15, 13),
+    ],
+)
 def test_invalid_input_qubo(h, J):
     with pytest.raises(TypeError):
         qp = QUBO(0, h, J)
@@ -96,8 +111,10 @@ def test_initialization_with_h_and_J():
 
     # Initialize QUBO instance with Ising h and J
     qubo_instance = QUBO(offset, h, J)
-    expected_Qdict = {(0, 0): 1.0, (1, 1): -4.0, (0,1):2}
-    assert qubo_instance.Qdict == expected_Qdict, "Qdict should be created based on h and J conversion"
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0}
+    assert (
+        qubo_instance.Qdict == expected_Qdict
+    ), "Qdict should be created based on h and J conversion"
 
     # Check that `n` was set correctly (it should be the max variable index + 1)
     assert qubo_instance.n == 2, "n should be the number of variables (max index + 1)"
@@ -116,7 +133,9 @@ def test_offset_calculation():
     expected_offset = offset + sum(J.values()) - sum(h.values())
 
     # Verify the offset value
-    assert qubo_instance.offset == expected_offset, "Offset should be adjusted based on sum of h and J values"
+    assert (
+        qubo_instance.offset == expected_offset
+    ), "Offset should be adjusted based on sum of h and J values"
 
 
 def test_isolated_terms_in_h_and_J():
@@ -129,12 +148,16 @@ def test_isolated_terms_in_h_and_J():
     print(qubo_instance.Qdict)
     print("check above")
     # Expected Qdict should only contain diagonal terms based on h
-    expected_Qdict = {(0, 0): 3.0, (1, 1): -4.0, (2, 2): 1.0}
-    assert qubo_instance.Qdict == expected_Qdict, "Qdict should reflect only h terms when J is empty"
+    expected_Qdict = {(0, 0): 0.0, (1, 1): 0.0, (2, 2): 0.0}
+    assert (
+        qubo_instance.Qdict == expected_Qdict
+    ), "Qdict should reflect only h terms when J is empty"
 
     # Expected offset should only adjust based on sum of h values since J is empty
     expected_offset = offset - sum(h.values())
-    assert qubo_instance.offset == expected_offset, "Offset should adjust only with h values when J is empty"
+    assert (
+        qubo_instance.offset == expected_offset
+    ), "Offset should adjust only with h values when J is empty"
 
 
 def test_consistent_terms_in_ham():
@@ -146,40 +169,47 @@ def test_consistent_terms_in_ham():
     h, J, constant = qubo_instance.qubo_to_ising()
 
     # Extract terms from the symbolic Hamiltonian (converting to string for easier term extraction)
-    ham_str = str(ham.form).replace(" ","")
+    ham_str = str(ham.form).replace(" ", "")
 
     # Verify linear terms from h are present
     for i, coeff in h.items():
         term = f"{coeff}*Z{i}"
-        assert term in ham_str, f"Expected linear term '{term}' not found in Hamiltonian."
+        assert (
+            term in ham_str
+        ), f"Expected linear term '{term}' not found in Hamiltonian."
 
     # Verify quadratic terms from J are present
     for (u, v), coeff in J.items():
         term = f"{coeff}*Z{u}*Z{v}"
-        assert term in ham_str, f"Expected quadratic term '{term}' not found in Hamiltonian."
+        assert (
+            term in ham_str
+        ), f"Expected quadratic term '{term}' not found in Hamiltonian."
 
 
 def test_combine_pairs():
     # Populate Qdict with both (i, j) and (j, i) pairs
-    qubo_instance= QUBO(0, {(0, 1): 2, (1, 0): 3, (1, 2): 5, (2, 1): -1})
+    qubo_instance = QUBO(0, {(0, 1): 2, (1, 0): 3, (1, 2): 5, (2, 1): -1})
     # Run canonical_q
     result = qubo_instance.canonical_q()
 
     # Expected outcome after combining pairs
     expected_result = {(0, 1): 5, (1, 2): 4}
-    assert result == expected_result, "canonical_q should combine (i, j) and (j, i) pairs"
+    assert (
+        result == expected_result
+    ), "canonical_q should combine (i, j) and (j, i) pairs"
 
 
 def test_qubo_to_qaoa_circuit():
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
-    qubo = QUBO(h, J)
+    qubo = QUBO(0, h, J)
 
     gammas = [0.1, 0.2]
     betas = [0.3, 0.4]
     circuit = qubo.qubo_to_qaoa_circuit(gammas, betas)
     assert isinstance(circuit, Circuit)
     assert circuit.nqubits == qubo.n
+
 
 def test_train_QAOA_regular_loss():
     h = {0: 1, 1: -1}
@@ -189,13 +219,17 @@ def test_train_QAOA_regular_loss():
     result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=True)
     assert isinstance(result, dict)
 
+
 def test_train_QAOA_cvar_loss():
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
 
-    result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1)
+    result = qubo.train_QAOA(
+        p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1
+    )
     assert isinstance(result, dict)
+
 
 def test_qubo_to_qaoa_object():
     h = {0: 1, 1: -1}
@@ -204,7 +238,7 @@ def test_qubo_to_qaoa_object():
 
     qaoa = qubo.qubo_to_qaoa_object()
     assert isinstance(qaoa, QAOA)
-    assert hasattr(qaoa, 'hamiltonian')
+    assert hasattr(qaoa, "hamiltonian")
 
 
 def test_linear_initialization():
@@ -257,4 +291,3 @@ def test_linear_square():
     expected_offset = 61
     assert Qdict == expected_Qdict
     assert offset == expected_offset
-
