@@ -199,34 +199,102 @@ def test_combine_pairs():
     ), "canonical_q should combine (i, j) and (j, i) pairs"
 
 
-def test_qubo_to_qaoa_circuit():
+@pytest.mark.parametrize(
+    "gammas, betas, alphas",
+    [
+        ([0.1, 0.2], [0.3, 0.4], None),
+        ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6]),
+    ],
+)
+def test_qubo_to_qaoa_circuit(gammas, betas, alphas):
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
 
     gammas = [0.1, 0.2]
     betas = [0.3, 0.4]
-    circuit = qubo.qubo_to_qaoa_circuit(gammas, betas)
+    circuit = qubo.qubo_to_qaoa_circuit(gammas=gammas, betas=betas, alphas=alphas)
     assert isinstance(circuit, Circuit)
     assert circuit.nqubits == qubo.n
 
 
-def test_train_QAOA_regular_loss():
-    h = {0: 1, 1: -1}
-    J = {(0, 1): 0.5}
-    qubo = QUBO(0, h, J)
+def test_qubo_to_qaoa_svp_mixer():
 
-    result = qubo.train_QAOA(p=2, nshots=10, regular_QAOA=True, regular_loss=True)
-    assert isinstance(result, dict)
+    def _get_svp_zero_representation(name_to_index):
+        """
+        :return: a set of indices where it takes values 1, this is to help constructing the mixer
+        """
+        active_set = set()
+        for key in name_to_index:
+            if "x" in key or "y" in key:
+                active_set.add(name_to_index[key])
+        return active_set
+
+    def _create_svp_mixer(name_to_index, beta):
+        """
+        :param name_to_index: a name to index mapping required to create mixer to preserve probability of 0
+        :return: mixer circuit
+        """
+        n = 0
+        for i in name_to_index:
+            n += 1
+        mixer = Circuit(n)
+        active_set = _get_svp_zero_representation(name_to_index)
+        for i in range(n):
+            if i in active_set:
+                mixer.add(gates.X(i))
+            mixer.add(gates.CRX(i, (i + 1) % n, beta))
+            if i in active_set:
+                mixer.add(gates.X(i))
+        return mixer
+
+    numeric_qubo = {
+        (0, 4): 4.0,
+        (2, 4): 4.0,
+        (3, 1): 6.0,
+        (1, 1): -3.0,
+        (3, 5): 2.0,
+        (4, 4): -1.0,
+        (3, 3): -3.0,
+        (1, 5): 6.0,
+        (2, 0): 8.0,
+        (5, 5): -3.0,
+    }
+    offset = 5.0
+    name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
+
+    gammas = [0.1, 0.2]
+    betas = [0.3, 0.4]
+    alphas = [0.5, 0.6]
+    SVP_mixer = _create_svp_mixer(name_to_index, betas)
+    circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
+        gammas, betas, alphas=None, mixer_function=SVP_mixer
+    )
+
+    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == QUBO(0, numeric_qubo).n
 
 
-def test_train_QAOA_cvar_loss():
+@pytest.mark.parametrize(
+    "reg_QAOA, reg_loss, cvar_alpha",
+    [
+        (True, True, None),
+        (True, False, 0.1),
+        (False, True, None),
+        (False, False, 0.1),
+    ],
+)
+def test_train_QAOA(reg_QAOA, reg_loss, cvar_alpha):
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
 
     result = qubo.train_QAOA(
-        p=2, nshots=10, regular_QAOA=True, regular_loss=False, cvar_alpha=0.1
+        p=2,
+        nshots=10,
+        regular_QAOA=reg_QAOA,
+        regular_loss=reg_loss,
+        cvar_alpha=cvar_alpha,
     )
     assert isinstance(result, dict)
 
@@ -237,6 +305,18 @@ def test_qubo_to_qaoa_object():
     qubo = QUBO(0, h, J)
 
     qaoa = qubo.qubo_to_qaoa_object()
+    assert isinstance(qaoa, QAOA)
+    assert hasattr(qaoa, "hamiltonian")
+
+
+def test_qubo_to_qaoa_object_params():
+    params = [0.1, 0.2]
+    h = {0: 1, 1: -1}
+    J = {(0, 1): 0.5}
+    qubo = QUBO(0, h, J)
+
+    qaoa = qubo.qubo_to_qaoa_object(params=np.array(params))
+
     assert isinstance(qaoa, QAOA)
     assert hasattr(qaoa, "hamiltonian")
 

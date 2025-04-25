@@ -88,6 +88,7 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
+            self.h, self.J, self.ising_constant = self.qubo_to_ising()
         elif len(args) == 2 and isinstance(args[0], dict) and isinstance(args[1], dict):
             h = args[0]
             J = args[1]
@@ -645,7 +646,7 @@ class QUBO:
 
         # Optionally set parameters
         if params is not None:
-            qaoa.set_parameters(np.ndarray(params))
+            qaoa.set_parameters(np.array(params))
         return qaoa
 
 
