@@ -11,7 +11,6 @@ packages = [{include="qibo_comb_optimisation", from="src"}]
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
 qibo = "^0.2.14"
-qibojit = "^0.1.5"
 
 [tool.poetry.group.analysis.dependencies]
 pylint = "^3.2.2"
@@ -45,6 +44,3 @@ lint-warnings = "pylint src --exit-zero"
 docs = "make -C doc html"
 docs-clean = "make -C doc clean"
 test-docs = "make -C doc doctest"
-
-
-

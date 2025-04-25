@@ -1,9 +1,15 @@
 import itertools
+import math
+import random
+from collections import defaultdict
 
 import numpy as np
-from qibo import hamiltonians
-from qibo.symbols import Z
+from qibo import Circuit, gates, hamiltonians
 from qibo.config import raise_error
+from qibo.hamiltonians import SymbolicHamiltonian
+from qibo.models import QAOA
+from qibo.optimizers import optimize as optimize
+from qibo.symbols import Z
 
 
 class QUBO:
@@ -35,6 +41,29 @@ class QUBO:
 
         brute_force() -> Tuple[List[int], float]:
             Solves the QUBO problem by exhaustively evaluating all possible solutions.
+
+        _phase_separation(circuit: qibo.models.Circuit, gamma: List[float]: -> qibo.models.Circuit
+            Apply the phase separation layer (corresponding to the Ising model Hamiltonian) to encode interaction terms into the quantum circuit.
+
+        _default_mixer(circuit: qibo.models.Circuit, beta: List[float], alpha: Optional[List[float]]): -> qibp.models.Circuit
+            Apply the mixer layer (uniform superposition evolution) with RX rotations on each qubit to spread the superposition.
+
+        _build(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
+            Construct the full QAOA circuit for the Ising model with p=len(gamma)/2 layers.
+            `mixer_function` is an optional argument that takes as input a circuit representing a custom mixer Hamiltonian and appends it to the original circuit.
+            An error will be raised if the mixer circuit has mismatched circuit width (differing nqubits).
+
+        construct_symbolic_Hamiltonian_from_QUBO():
+            Constructs a symbolic Hamiltonian from the QUBO problem by converting it
+            to an Ising model.
+
+        canonical_q():
+            We want to keep non-zero component when i < j.
+
+        qubo_to_qaoa_circuit(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
+            Constructs a QAOA circuit for the given QUBO problem.
+
+        train_QAOA(p: int, nshots: int, regular_QAOA: bool = True, regular_loss: bool = True, maxiter: int, method: str, cvar_delta: float, mixer_function: Optional[qibo.models.Circuit]): -> result.frequencies(binary=True)
     """
 
     def __init__(self, offset, *args):
@@ -82,9 +111,12 @@ class QUBO:
             for key in self.Qdict:
                 self.n = max([self.n, key[0], key[1]])
             self.n += 1
+            self.h, self.J, self.ising_constant = self.qubo_to_ising()
         elif len(args) == 2 and isinstance(args[0], dict) and isinstance(args[1], dict):
             h = args[0]
             J = args[1]
+            self.h = h
+            self.J = J
             self.Qdict = {(v, v): 2.0 * bias for v, bias in h.items()}
             self.n = 0
 
@@ -100,6 +132,67 @@ class QUBO:
             self.offset += sum(J.values()) - sum(h.values())
         else:
             raise_error(TypeError, "Invalid input for QUBO.")
+
+    def _phase_separation(self, circuit, gamma):
+        """
+        Apply the phase separation layer (corresponding to the Ising model Hamiltonian).
+        This step encodes the interaction terms into the quantum circuit.
+        """
+        # Apply R_z for diagonal terms (h_i)
+        for i in range(self.n):
+            circuit.add(gates.RZ(i, -2 * gamma * self.h[i]))  # -2 * gamma * h_i
+
+        # Apply CNOT and R_z for off-diagonal terms (J_ij)
+        for i in range(self.n):
+            for j in range(self.n):
+                if (i, j) in self.J:
+                    weight = self.J[(i, j)]
+                    if weight != 0:
+                        circuit.add(gates.CNOT(i, j))
+                        circuit.add(
+                            gates.RZ(j, -2 * gamma * weight)
+                        )  # -2 * gamma * J_ij
+                        circuit.add(gates.CNOT(i, j))
+
+    def _default_mixer(self, circuit, beta, alpha=None):
+        """
+        Apply the mixer layer (uniform superposition evolution).
+        This step applies RX rotations on each qubit to spread the superposition.
+        """
+        for i in range(self.n):
+            circuit.add(gates.RX(i, 2 * beta))  # Apply RX gates for mixer
+            if alpha:
+                circuit.add(gates.RY(i, 2 * alpha))
+
+    def _build(self, gammas, betas, alphas=None, mixer_function=None):
+        """
+        Construct the full QAOA circuit for the Ising model with p layers.
+        `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
+        If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
+        """
+        p = len(gammas)  # Necessary?
+
+        # Apply initial Hadamard gates (uniform superposition)
+        circuit = Circuit(self.n)
+        for i in range(self.n):
+            circuit.add(gates.H(i))
+
+        for layer in range(p):
+            self._phase_separation(
+                circuit, gammas[layer]
+            )  # Phase separation (Ising model encoding)
+            if alphas is not None:
+                self._default_mixer(circuit, betas[layer], alphas[layer])
+            else:
+                if mixer_function:
+                    circuit += mixer_function
+                else:
+                    self._default_mixer(circuit, betas[layer])
+
+        for i in range(self.n):
+            circuit.add(gates.M(i))
+
+        return circuit
 
     def multiply_scalar(self, scalar_multiplier):
         """Multiplies all the quadratic coefficients by a scalar value.
@@ -123,7 +216,7 @@ class QUBO:
         """
         Args:
             other_Quadratic: another optimisation_class class object
-        Returns: 
+        Returns:
             Updating the optimisation_class function to obtain the sum
         """
         for key in other_Quadratic.Qdict:
@@ -172,7 +265,7 @@ class QUBO:
 
         for (u, v), bias in self.Qdict.items():
             if u == v:
-                h[u] = h.setdefault(u, 0) + bias/2
+                h[u] = h.setdefault(u, 0) + bias / 2
                 linear_offset += bias
 
             else:
@@ -360,16 +453,228 @@ class QUBO:
 
     def canonical_q(self):
         """We want to keep non-zero component when i < j.
-        
+
         Returns:
             self.Qdict (dict): A dictionary and also update Qdict
         """
         for i in range(self.n):
             for j in range(i, self.n):
                 if (j, i) in self.Qdict:
-                    self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop((j, i))
+                    self.Qdict[(i, j)] = self.Qdict.get((i, j), 0) + self.Qdict.pop(
+                        (j, i)
+                    )
                     self.Qdict.pop((j, i), None)
         return self.Qdict
+
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, mixer_function=None):
+        """
+        Constructs a QAOA circuit for the given QUBO problem.
+
+        Parameters
+        ----------
+        gammas: parameters for phasers
+        betas: parameters for X mixers
+        alphas: parameters for Y mixers
+        mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
+        and produce the mixer circuit, currently we assume it takes in one parameter.
+
+        Returns
+        -------
+        circuit : qibo.models.Circuit
+            The QAOA circuit corresponding to the QUBO problem.
+        """
+        if alphas is not None:  # Use XQAOA, ignore mixer_function
+            return self._build(gammas, betas, alphas)
+        else:
+            if mixer_function:
+                return self._build(
+                    gammas, betas, alphas=None, mixer_function=mixer_function
+                )
+            else:
+                return self._build(gammas, betas)
+
+    def train_QAOA(
+        self,
+        p,
+        nshots=10,
+        regular_QAOA=True,
+        regular_loss=True,
+        maxiter=10,
+        method="cobyla",
+        cvar_delta=0.25,
+        mixer_function=None,
+    ):
+        """
+
+        Parameters
+        ----------
+        p: number of layers
+        nshots: number of shots
+        regular_QAOA: if True, it is the vanilla QAOA, otherwise, we use XQAOA
+        regular_loss: if true, we minimize the expected value, otherwise, we minimize cvar
+        maxiter: maximum iterations
+        method: classical optimizer
+        cvar_delta: if CVaR is used, this is the threshold
+        mixer_function: function defining a custom mixer (optional)
+
+        Returns frequencies
+        -------
+
+        """
+        gammas = [random.uniform(0, 2 * math.pi) for i in range(p)]
+        betas = [random.uniform(0, 2 * math.pi) for i in range(p)]
+        if regular_QAOA:
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas)
+            # n_params = 2*p
+            parameters = []
+            for i in range(p):
+                parameters.append(gammas[i])
+                parameters.append(betas[i])
+        else:
+            alphas = [random.uniform(0, 2 * math.pi) for i in range(p)]
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
+            # n_params = 3*p
+            parameters = []
+            for i in range(p):
+                parameters.append(gammas[i])
+                parameters.append(betas[i])
+                parameters.append(alphas[i])
+        # we have prepared the circuit, now we want to train them
+
+        if regular_loss:
+
+            def myloss(parameters):
+                # parameters to be optimize is the input, the output is a counter object
+                # circuit.set_parameters(parameters)  #this step is wrong
+                m = len(parameters)
+                if regular_QAOA:
+                    gammas = parameters[: m // 2]
+                    betas = parameters[m // 2 :]
+                    circuit = self.qubo_to_qaoa_circuit(
+                        gammas, betas, mixer_function=mixer_function
+                    )
+                else:
+                    gammas = parameters[: m // 3]
+                    betas = parameters[m // 3 : 2 * m // 3]
+                    alphas = parameters[2 * m // 3 :]
+                    circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
+                result = circuit(None, nshots)
+                result_counter = result.frequencies(binary=True)
+                energy_dict = defaultdict(int)
+                for key in result_counter:
+                    x = [int(sub_key) for sub_key in key]
+                    energy_dict[self.evaluate_f(x)] += result_counter[key]
+                loss = sum(key * energy_dict[key] / nshots for key in energy_dict)
+                return loss
+
+        else:
+
+            def myloss(parameters, delta=cvar_delta):
+                """
+                Compute the CVaR of the energy distribution for a given quantile threshold `delta`.
+
+                Parameters:
+                - parameters: The parameters to set in the circuit.
+                - delta: The quantile threshold (default is 0.1 for 10%).
+
+                Returns:
+                - CVaR: The computed CVaR value.
+                """
+                m = len(parameters)
+                if regular_QAOA:
+                    gammas = parameters[: m // 2]
+                    betas = parameters[m // 2 :]
+                    circuit = self.qubo_to_qaoa_circuit(gammas, betas)
+                else:
+                    gammas = parameters[: m // 3]
+                    betas = parameters[m // 3 : 2 * m // 3]
+                    alphas = parameters[2 * m // 3 :]
+                    circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
+                result = circuit(None, nshots)
+                result_counter = result.frequencies(binary=True)
+
+                energy_dict = defaultdict(int)
+                for key in result_counter:
+                    # key is the binary string, value is the frequency
+                    x = [int(sub_key) for sub_key in key]
+                    energy_dict[self.evaluate_f(x)] += result_counter[key]
+
+                # Normalize frequencies to probabilities
+                total_counts = sum(energy_dict.values())
+                energy_probs = {
+                    key: value / total_counts for key, value in energy_dict.items()
+                }
+
+                # Sort energies and compute cumulative probability
+                sorted_energies = sorted(
+                    energy_probs.items()
+                )  # List of (energy, probability)
+                cumulative_prob = 0
+                selected_energies = []
+
+                for energy, prob in sorted_energies:
+                    if cumulative_prob + prob > cvar_delta:
+                        # Include only the fraction of the probability needed to reach `cvar_delta`
+                        excess_prob = cvar_delta - cumulative_prob
+                        selected_energies.append((energy, excess_prob))
+                        cumulative_prob = cvar_delta
+                        break
+                    else:  # pragma: no cover
+                        selected_energies.append((energy, prob))
+                        cumulative_prob += prob
+
+                # Compute CVaR as weighted average of selected energies
+                cvar = (
+                    sum(energy * prob for energy, prob in selected_energies)
+                    / cvar_delta
+                )
+                return cvar
+
+        best, params, extra = optimize(
+            myloss, parameters, method=method, options={"maxiter": maxiter}
+        )
+        # unpack params
+        m = len(params)
+        if regular_QAOA:
+            gammas = params[: m // 2]
+            betas = params[m // 2 :]
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas)
+        else:
+            gammas = params[: m // 3]
+            betas = params[m // 3 : 2 * m // 3]
+            alphas = params[2 * m // 3 :]
+            circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
+        result = circuit(None, nshots)
+        return result.frequencies(binary=True)
+
+    def qubo_to_qaoa_object(self, params: list = None):
+        """
+        Generates a QAOA circuit for the QUBO problem.
+
+        Parameters
+        ----------
+        params : list, optional
+            parameters for QAOA
+        Returns
+        -------
+        circuit : qibo.models.QAOA
+            A QAOA circuit for the QUBO problem.
+        """
+        # Convert QUBO to Ising Hamiltonian
+        h, J, constant = self.qubo_to_ising()
+
+        # Create the Ising Hamiltonian using Qibo
+        symbolic_ham = sum(h[i] * Z(i) for i in h)
+        symbolic_ham += sum(J[(u, v)] * Z(u) * Z(v) for (u, v) in J)
+
+        # Define the QAOA model
+        hamiltonian = SymbolicHamiltonian(symbolic_ham)
+        qaoa = QAOA(hamiltonian)
+
+        # Optionally set parameters
+        if params is not None:
+            qaoa.set_parameters(np.array(params))
+        return qaoa
 
 
 class linear_problem:
@@ -461,7 +766,6 @@ class linear_problem:
         """
         self.A += other_linear.A
         self.b += other_linear.b
-        return self
 
     def evaluate_f(self, x):
         """Evaluates the linear function Ax + b at a given point x.
@@ -469,7 +773,7 @@ class linear_problem:
         Args:
             x (np.ndarray): Input vector at which to evaluate the linear function.
 
-        Returns: 
+        Returns:
             numpy.ndarray: The value of the linear function Ax + b at the given x.
 
         Examples
