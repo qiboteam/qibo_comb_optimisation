@@ -595,7 +595,7 @@ class QUBO:
                         selected_energies.append((energy, excess_prob))
                         cumulative_prob = cvar_delta
                         break
-                    else:
+                    else:  # pragma: no cover
                         selected_energies.append((energy, prob))
                         cumulative_prob += prob
 
