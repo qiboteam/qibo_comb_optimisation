@@ -41,6 +41,29 @@ class QUBO:
 
         brute_force() -> Tuple[List[int], float]:
             Solves the QUBO problem by exhaustively evaluating all possible solutions.
+
+        _phase_separation(circuit: qibo.models.Circuit, gamma: List[float]: -> qibo.models.Circuit
+            Apply the phase separation layer (corresponding to the Ising model Hamiltonian) to encode interaction terms into the quantum circuit.
+
+        _default_mixer(circuit: qibo.models.Circuit, beta: List[float], alpha: Optional[List[float]]): -> qibp.models.Circuit
+            Apply the mixer layer (uniform superposition evolution) with RX rotations on each qubit to spread the superposition.
+
+        _build(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
+            Construct the full QAOA circuit for the Ising model with p=len(gamma)/2 layers.
+            `mixer_function` is an optional argument that takes as input a circuit representing a custom mixer Hamiltonian and appends it to the original circuit.
+            An error will be raised if the mixer circuit has mismatched circuit width (differing nqubits).
+
+        construct_symbolic_Hamiltonian_from_QUBO():
+            Constructs a symbolic Hamiltonian from the QUBO problem by converting it
+            to an Ising model.
+
+        canonical_q():
+            We want to keep non-zero component when i < j.
+
+        qubo_to_qaoa_circuit(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
+            Constructs a QAOA circuit for the given QUBO problem.
+
+        train_QAOA(p: int, nshots: int, regular_QAOA: bool = True, regular_loss: bool = True, maxiter: int, method: str, cvar_delta: float, mixer_function: Optional[qibo.models.Circuit]): -> result.frequencies(binary=True)
     """
 
     def __init__(self, offset, *args):
@@ -109,6 +132,67 @@ class QUBO:
             self.offset += sum(J.values()) - sum(h.values())
         else:
             raise_error(TypeError, "Invalid input for QUBO.")
+
+    def _phase_separation(self, circuit, gamma):
+        """
+        Apply the phase separation layer (corresponding to the Ising model Hamiltonian).
+        This step encodes the interaction terms into the quantum circuit.
+        """
+        # Apply R_z for diagonal terms (h_i)
+        for i in range(self.n):
+            circuit.add(gates.RZ(i, -2 * gamma * self.h[i]))  # -2 * gamma * h_i
+
+        # Apply CNOT and R_z for off-diagonal terms (J_ij)
+        for i in range(self.n):
+            for j in range(self.n):
+                if (i, j) in self.J:
+                    weight = self.J[(i, j)]
+                    if weight != 0:
+                        circuit.add(gates.CNOT(i, j))
+                        circuit.add(
+                            gates.RZ(j, -2 * gamma * weight)
+                        )  # -2 * gamma * J_ij
+                        circuit.add(gates.CNOT(i, j))
+
+    def _default_mixer(self, circuit, beta, alpha=None):
+        """
+        Apply the mixer layer (uniform superposition evolution).
+        This step applies RX rotations on each qubit to spread the superposition.
+        """
+        for i in range(self.n):
+            circuit.add(gates.RX(i, 2 * beta))  # Apply RX gates for mixer
+            if alpha:
+                circuit.add(gates.RY(i, 2 * alpha))
+
+    def _build(self, gammas, betas, alphas=None, mixer_function=None):
+        """
+        Construct the full QAOA circuit for the Ising model with p layers.
+        `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
+        If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
+        """
+        p = len(gammas)  # Necessary?
+
+        # Apply initial Hadamard gates (uniform superposition)
+        circuit = Circuit(self.n)
+        for i in range(self.n):
+            circuit.add(gates.H(i))
+
+        for layer in range(p):
+            self._phase_separation(
+                circuit, gammas[layer]
+            )  # Phase separation (Ising model encoding)
+            if alphas is not None:
+                self._default_mixer(circuit, betas[layer], alphas[layer])
+            else:
+                if mixer_function:
+                    circuit += mixer_function
+                else:
+                    self._default_mixer(circuit, betas[layer])
+
+        for i in range(self.n):
+            circuit.add(gates.M(i))
+
+        return circuit
 
     def multiply_scalar(self, scalar_multiplier):
         """Multiplies all the quadratic coefficients by a scalar value.
@@ -399,75 +483,15 @@ class QUBO:
         circuit : qibo.models.Circuit
             The QAOA circuit corresponding to the QUBO problem.
         """
-
-        p = len(gammas)
-
-        def phase_separation(circuit, gamma):
-            """
-            Apply the phase separation layer (corresponding to the Ising model Hamiltonian).
-            This step encodes the interaction terms into the quantum circuit.
-            """
-            # Apply R_z for diagonal terms (h_i)
-            for i in range(self.n):
-                circuit.add(gates.RZ(i, -2 * gamma * self.h[i]))  # -2 * gamma * h_i
-
-            # Apply CNOT and R_z for off-diagonal terms (J_ij)
-            for i in range(self.n):
-                for j in range(self.n):
-                    if (i, j) in self.J:
-                        weight = self.J[(i, j)]
-                        if weight != 0:
-                            circuit.add(gates.CNOT(i, j))
-                            circuit.add(
-                                gates.RZ(j, -2 * gamma * weight)
-                            )  # -2 * gamma * J_ij
-                            circuit.add(gates.CNOT(i, j))
-
-        def default_mixer(circuit, beta, alpha=None):
-            """
-            Apply the mixer layer (uniform superposition evolution).
-            This step applies RX rotations on each qubit to spread the superposition.
-            """
-            for i in range(self.n):
-                circuit.add(gates.RX(i, 2 * beta))  # Apply RX gates for mixer
-                if alpha:
-                    circuit.add(gates.RY(i, 2 * alpha))
-
-        def build(gammas, betas, alphas=None, mixer_function=None):
-            """
-            Construct the full QAOA circuit for the Ising model with p layers.
-            `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
-            If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
-            """
-            # Apply initial Hadamard gates (uniform superposition)
-            circuit = Circuit(self.n)
-            for i in range(self.n):
-                circuit.add(gates.H(i))
-
-            for layer in range(p):
-                phase_separation(
-                    circuit, gammas[layer]
-                )  # Phase separation (Ising model encoding)
-                if alphas is not None:
-                    default_mixer(circuit, betas[layer], alphas[layer])
-                else:
-                    if mixer_function:
-                        circuit += mixer_function
-                    else:
-                        default_mixer(circuit, betas[layer])
-
-            for i in range(self.n):
-                circuit.add(gates.M(i))
-
-            return circuit
-
         if alphas is not None:  # Use XQAOA, ignore mixer_function
-            return build(gammas, betas, alphas)
+            return self._build(gammas, betas, alphas)
         else:
             if mixer_function:
-                return build(gammas, betas, alphas=None, mixer_function=mixer_function)
+                return self._build(
+                    gammas, betas, alphas=None, mixer_function=mixer_function
+                )
             else:
-                return build(gammas, betas)
+                return self._build(gammas, betas)
 
     def train_QAOA(
         self,
