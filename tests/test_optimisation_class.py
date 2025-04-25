@@ -276,7 +276,7 @@ def test_qubo_to_qaoa_svp_mixer():
 
 
 @pytest.mark.parametrize(
-    "reg_QAOA, reg_loss, cvar_alpha",
+    "reg_QAOA, reg_loss, cvar_delta",
     [
         (True, True, None),
         (True, False, 0.1),
@@ -284,7 +284,7 @@ def test_qubo_to_qaoa_svp_mixer():
         (False, False, 0.1),
     ],
 )
-def test_train_QAOA(reg_QAOA, reg_loss, cvar_alpha):
+def test_train_QAOA(reg_QAOA, reg_loss, cvar_delta):
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
@@ -294,7 +294,7 @@ def test_train_QAOA(reg_QAOA, reg_loss, cvar_alpha):
         nshots=10,
         regular_QAOA=reg_QAOA,
         regular_loss=reg_loss,
-        cvar_alpha=cvar_alpha,
+        cvar_delta=cvar_delta,
     )
     assert isinstance(result, dict)
 

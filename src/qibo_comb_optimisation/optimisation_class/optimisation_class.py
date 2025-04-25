@@ -477,7 +477,7 @@ class QUBO:
         regular_loss=True,
         maxiter=10,
         method="cobyla",
-        cvar_alpha=0.25,
+        cvar_delta=0.25,
         mixer_function=None,
     ):
         """
@@ -490,7 +490,7 @@ class QUBO:
         regular_loss: if true, we minimize the expected value, otherwise, we minimize cvar
         maxiter: maximum iterations
         method: classical optimizer
-        cvar_alpha: if cvar is used, this is the alpha
+        cvar_delta: if CVaR is used, this is the threshold
         mixer_function: function defining a custom mixer (optional)
 
         Returns frequencies
@@ -545,13 +545,13 @@ class QUBO:
 
         else:
 
-            def myloss(parameters, alpha=cvar_alpha):
+            def myloss(parameters, delta=cvar_delta):
                 """
-                Compute the CVaR of the energy distribution for a given quantile threshold `alpha`.
+                Compute the CVaR of the energy distribution for a given quantile threshold `delta`.
 
                 Parameters:
                 - parameters: The parameters to set in the circuit.
-                - alpha: The quantile threshold (default is 0.1 for 10%).
+                - delta: The quantile threshold (default is 0.1 for 10%).
 
                 Returns:
                 - CVaR: The computed CVaR value.
@@ -589,18 +589,21 @@ class QUBO:
                 selected_energies = []
 
                 for energy, prob in sorted_energies:
-                    if cumulative_prob + prob > alpha:
-                        # Include only the fraction of the probability needed to reach `alpha`
-                        excess_prob = alpha - cumulative_prob
+                    if cumulative_prob + prob > cvar_delta:
+                        # Include only the fraction of the probability needed to reach `cvar_delta`
+                        excess_prob = cvar_delta - cumulative_prob
                         selected_energies.append((energy, excess_prob))
-                        cumulative_prob = alpha
+                        cumulative_prob = cvar_delta
                         break
                     else:
                         selected_energies.append((energy, prob))
                         cumulative_prob += prob
 
                 # Compute CVaR as weighted average of selected energies
-                cvar = sum(energy * prob for energy, prob in selected_energies) / alpha
+                cvar = (
+                    sum(energy * prob for energy, prob in selected_energies)
+                    / cvar_delta
+                )
                 return cvar
 
         best, params, extra = optimize(
