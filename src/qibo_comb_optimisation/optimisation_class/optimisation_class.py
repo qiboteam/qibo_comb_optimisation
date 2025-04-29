@@ -164,13 +164,15 @@ class QUBO:
             if alpha:
                 circuit.add(gates.RY(i, 2 * alpha))
 
-    def _build(self, gammas, betas, alphas=None, mixer_function=None):
+    def _build(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Construct the full QAOA circuit for the Ising model with p layers.
-        `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
-        If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
+        custom_mixer (List[qibo.models.Circuit]): An optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
         """
-        p = len(gammas)  # Necessary?
+        p = len(gammas)
 
         # Apply initial Hadamard gates (uniform superposition)
         circuit = Circuit(self.n)
@@ -184,8 +186,16 @@ class QUBO:
             if alphas is not None:
                 self._default_mixer(circuit, betas[layer], alphas[layer])
             else:
-                if mixer_function:
-                    circuit += mixer_function
+                if custom_mixer:
+                    if len(custom_mixer) == 1:
+                        circuit += custom_mixer[0]
+                    elif len(custom_mixer) == len(gammas):
+                        circuit += custom_mixer[layer]
+                    else:
+                        raise_error(
+                            ValueError,
+                            f"Input len(custom_mixer)={len(custom_mixer)}. Note: len(custom_mixer) needs to be 1 or len(gammas)=={len(gammas)}.",
+                        )
                 else:
                     self._default_mixer(circuit, betas[layer])
 
@@ -466,7 +476,7 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, mixer_function=None):
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Constructs a QAOA circuit for the given QUBO problem.
 
@@ -475,8 +485,10 @@ class QUBO:
         gammas: parameters for phasers
         betas: parameters for X mixers
         alphas: parameters for Y mixers
-        mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
-        and produce the mixer circuit, currently we assume it takes in one parameter.
+        custom_mixer (List[qibo.models.Circuit]): optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
 
         Returns
         -------
@@ -486,9 +498,9 @@ class QUBO:
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             return self._build(gammas, betas, alphas)
         else:
-            if mixer_function:
+            if custom_mixer:
                 return self._build(
-                    gammas, betas, alphas=None, mixer_function=mixer_function
+                    gammas, betas, alphas=None, custom_mixer=custom_mixer
                 )
             else:
                 return self._build(gammas, betas)
@@ -502,7 +514,7 @@ class QUBO:
         maxiter=10,
         method="cobyla",
         cvar_delta=0.25,
-        mixer_function=None,
+        custom_mixer=None,
     ):
         """
 
@@ -515,7 +527,7 @@ class QUBO:
         maxiter: maximum iterations
         method: classical optimizer
         cvar_delta: if CVaR is used, this is the threshold
-        mixer_function: function defining a custom mixer (optional)
+        custom_mixer: function defining a custom mixer (optional)
 
         Returns frequencies
         -------
@@ -551,7 +563,7 @@ class QUBO:
                     gammas = parameters[: m // 2]
                     betas = parameters[m // 2 :]
                     circuit = self.qubo_to_qaoa_circuit(
-                        gammas, betas, mixer_function=mixer_function
+                        gammas, betas, custom_mixer=custom_mixer
                     )
                 else:
                     gammas = parameters[: m // 3]
@@ -633,6 +645,7 @@ class QUBO:
         best, params, extra = optimize(
             myloss, parameters, method=method, options={"maxiter": maxiter}
         )
+        print(best, params, extra)
         # unpack params
         m = len(params)
         if regular_QAOA:
