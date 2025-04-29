@@ -218,7 +218,15 @@ def test_qubo_to_qaoa_circuit(gammas, betas, alphas):
     assert circuit.nqubits == qubo.n
 
 
-def test_qubo_to_qaoa_svp_mixer():
+@pytest.mark.parametrize(
+    "gammas, betas",
+    [
+        ([0.1, 0.2], [0.3]),
+        ([0.1, 0.2], [0.3, 0.4]),
+        ([0.1, 0.2], [0.3, 0.4, 0.5]),
+    ],
+)
+def test_qubo_to_qaoa_svp_mixer(gammas, betas):
 
     def _get_svp_zero_representation(name_to_index):
         """
@@ -243,7 +251,8 @@ def test_qubo_to_qaoa_svp_mixer():
         for i in range(n):
             if i in active_set:
                 mixer.add(gates.X(i))
-            mixer.add(gates.CRX(i, (i + 1) % n, beta))
+            mixer.add(gates.RY((i + 1) % n, beta))
+            mixer.add(gates.CZ(i, (i + 1) % n))
             if i in active_set:
                 mixer.add(gates.X(i))
         return mixer
@@ -263,16 +272,21 @@ def test_qubo_to_qaoa_svp_mixer():
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
 
-    gammas = [0.1, 0.2]
-    betas = [0.3, 0.4]
-    alphas = [0.5, 0.6]
-    SVP_mixer = _create_svp_mixer(name_to_index, betas)
-    circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
-        gammas, betas, alphas=None, mixer_function=SVP_mixer
-    )
+    SVP_mixers = []
+    for idx_beta in range(0, len(betas)):
+        SVP_mixers.append(_create_svp_mixer(name_to_index, betas[idx_beta]))
 
-    assert isinstance(circuit, Circuit)
-    assert circuit.nqubits == QUBO(0, numeric_qubo).n
+    if len(betas) > 2:
+        with pytest.raises(ValueError):
+            circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
+                gammas, betas, alphas=None, custom_mixer=SVP_mixers
+            )
+    else:
+        circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
+            gammas, betas, alphas=None, custom_mixer=SVP_mixers
+        )
+        assert isinstance(circuit, Circuit)
+        assert circuit.nqubits == QUBO(0, numeric_qubo).n
 
 
 @pytest.mark.parametrize(
