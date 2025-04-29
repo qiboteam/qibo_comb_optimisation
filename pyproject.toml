@@ -22,6 +22,11 @@ pytest-cov = "^4.0.0"
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.3.7"
 
+[tool.poetry.group.dev1.dependencies]
+ipython = "^8.24.0"
+jupyterlab = "^4.1.8"
+black = "^24.4.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
