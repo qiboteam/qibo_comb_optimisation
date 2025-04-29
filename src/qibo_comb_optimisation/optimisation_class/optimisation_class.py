@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import numpy as np
 from qibo import Circuit, gates, hamiltonians
+from qibo.backends import _check_backend
 from qibo.config import raise_error
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models import QAOA
@@ -514,6 +515,7 @@ class QUBO:
         method="cobyla",
         cvar_delta=0.25,
         custom_mixer=None,
+        backend=None,
     ):
         """
 
@@ -527,11 +529,13 @@ class QUBO:
         method: classical optimizer
         cvar_delta: if CVaR is used, this is the threshold
         custom_mixer: function defining a custom mixer (optional)
-
+        backend: include backend argument
         Returns best, params, extra  # frequencies
         -------
 
         """
+
+        backend = _check_backend(backend)
 
         circuit = self.qubo_to_qaoa_circuit(
             gammas, betas, alphas=alphas, custom_mixer=custom_mixer
@@ -577,7 +581,7 @@ class QUBO:
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas, betas, alphas=alphas, custom_mixer=custom_mixer
                 )
-                result = circuit(None, nshots)
+                result = backend.execute_circuit(circuit, nshots=1000)
                 result_counter = result.frequencies(binary=True)
 
                 energy_dict = defaultdict(int)
@@ -632,7 +636,7 @@ class QUBO:
             alphas=optimised_alphas,
             custom_mixer=custom_mixer,
         )
-        result = circuit(None, nshots)
+        result = backend.execute_circuit(circuit, nshots=1000)
 
         return best, params, extra, circuit, result.frequencies(binary=True)
 
