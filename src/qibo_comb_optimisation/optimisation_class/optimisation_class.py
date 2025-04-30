@@ -195,6 +195,21 @@ class QUBO:
                             ValueError,
                             f"Input len(custom_mixer)={len(custom_mixer)}. Note: len(custom_mixer) needs to be 1 or len(gammas)=={len(gammas)}.",
                         )
+
+                    # print("<<< OLD <<<")
+                    # for data in custom_mixer[layer].raw['queue']:
+                    #     print(data)
+
+                    num_param_gates = len(
+                        custom_mixer[layer].trainable_gates
+                    )  # sum(1 for data in custom_mixer[layer].raw['queue'] if data['name'] == 'crx')
+                    new_beta = np.repeat(betas[layer], num_param_gates)
+                    custom_mixer[layer].set_parameters(new_beta)
+
+                    # print(">>> NEW >>>")
+                    # for data in custom_mixer[layer].raw['queue']:
+                    #     print(data)
+
                 else:
                     self._default_mixer(circuit, betas[layer])
 
@@ -556,6 +571,10 @@ class QUBO:
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas, betas, alphas=alphas, custom_mixer=custom_mixer
                 )
+                print(">> Optimisation step:\n")
+                for data in circuit.raw["queue"]:
+                    print(data)
+
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
                 energy_dict = defaultdict(int)
@@ -581,6 +600,10 @@ class QUBO:
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas, betas, alphas=alphas, custom_mixer=custom_mixer
                 )
+                print(">> Optimisation step:\n")
+                for data in circuit.raw["queue"]:
+                    print(data)
+
                 result = backend.execute_circuit(circuit, nshots=1000)
                 result_counter = result.frequencies(binary=True)
 
