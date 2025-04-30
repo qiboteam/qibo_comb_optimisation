@@ -559,15 +559,23 @@ class QUBO:
         for i in range(p):
             parameters.append(gammas[i])
             parameters.append(betas[i])
-            if alphas:
+            if alphas is not None:
                 parameters.append(alphas[i])
 
         if regular_loss:
 
             def myloss(parameters):
-                # parameters to be optimize is the input, the output is a counter object
+                m = len(parameters)
+                if alphas is not None:
+                    gammas = parameters[::3]
+                    betas = parameters[1::3]
+                    unpacked_alphas = parameters[2::3]
+                else:
+                    gammas = parameters[::2]
+                    betas = parameters[1::2]
+                    unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
-                    gammas, betas, alphas=alphas, custom_mixer=custom_mixer
+                    gammas, betas, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
                 print(">> Optimisation step:\n")
                 for data in circuit.raw["queue"]:
@@ -595,8 +603,17 @@ class QUBO:
                 Returns:
                 - CVaR: The computed CVaR value.
                 """
+                m = len(parameters)
+                if alphas is not None:
+                    gammas = parameters[::3]
+                    betas = parameters[1::3]
+                    unpacked_alphas = parameters[2::3]
+                else:
+                    gammas = parameters[::2]
+                    betas = parameters[1::2]
+                    unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
-                    gammas, betas, alphas=alphas, custom_mixer=custom_mixer
+                    gammas, betas, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
                 print(">> Optimisation step:\n")
                 for data in circuit.raw["queue"]:
