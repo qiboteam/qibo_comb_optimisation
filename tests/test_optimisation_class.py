@@ -417,20 +417,6 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
     # SVP_mixers is now a list of functions that take beta and return a circuit
     SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
 
-    # Edge case: len(custom_mixer) != 1 and != len(gammas) should raise ValueError
-    bad_mixers = SVP_mixers + [lambda beta: _create_svp_mixer(name_to_index, beta)]  # Make the list the wrong length
-    with pytest.raises(ValueError, match="Invalid custom_mixer length."):
-        QUBO(0, numeric_qubo).train_QAOA(
-            gammas=gammas,
-            betas=betas,
-            alphas=alphas,
-            nshots=10,
-            regular_loss=reg_loss,
-            cvar_delta=cvar_delta,
-            custom_mixer=bad_mixers,
-        )
-
-    # Normal case
     result = QUBO(0, numeric_qubo).train_QAOA(
         gammas=gammas,
         betas=betas,

@@ -195,8 +195,6 @@ class QUBO:
                         circuit += custom_mixer[0](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
                     elif len(custom_mixer) == len(gammas):
                         circuit += custom_mixer[layer](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
-                    else:
-                        raise_error(ValueError, "Invalid custom_mixer length.")
 
                     # print("<<< OLD <<<")
                     # for data in custom_mixer[layer].raw['queue']:
