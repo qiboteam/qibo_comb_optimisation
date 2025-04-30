@@ -186,6 +186,8 @@ class QUBO:
                 self._default_mixer(circuit, betas[layer], alphas[layer])
             else:
                 if custom_mixer:
+                    if len(gammas) != len(betas):
+                        raise_error(ValueError, f"Input len(gammas) != len(betas).")
                     if len(custom_mixer) == 1:
                         circuit += custom_mixer[0]
                     elif len(custom_mixer) == len(gammas):

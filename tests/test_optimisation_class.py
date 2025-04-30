@@ -276,7 +276,7 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
     for idx_beta in range(0, len(betas)):
         SVP_mixers.append(_create_svp_mixer(name_to_index, betas[idx_beta]))
 
-    if len(betas) > 2:
+    if len(betas) != len(gammas):
         with pytest.raises(ValueError):
             circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
                 gammas, betas, alphas=None, custom_mixer=SVP_mixers
