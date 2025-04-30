@@ -190,7 +190,7 @@ class QUBO:
                         raise_error(ValueError, f"Input len(gammas) != len(betas).")
 
                     # Extract number of betas per layer
-                    betas_per_layer = self.num_betas // self.n_layers
+                    betas_per_layer = len(betas) // p
                     if len(custom_mixer) == 1:
                         circuit += custom_mixer[0](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
                     elif len(custom_mixer) == len(gammas):
