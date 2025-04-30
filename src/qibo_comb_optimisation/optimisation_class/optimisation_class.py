@@ -188,15 +188,11 @@ class QUBO:
                 if custom_mixer:
                     if len(gammas) != len(betas):
                         raise_error(ValueError, f"Input len(gammas) != len(betas).")
+
                     if len(custom_mixer) == 1:
                         circuit += custom_mixer[0]
                     elif len(custom_mixer) == len(gammas):
                         circuit += custom_mixer[layer]
-                    else:
-                        raise_error(
-                            ValueError,
-                            f"Input len(custom_mixer)={len(custom_mixer)}. Note: len(custom_mixer) needs to be 1 or len(gammas)=={len(gammas)}.",
-                        )
 
                     # print("<<< OLD <<<")
                     # for data in custom_mixer[layer].raw['queue']:

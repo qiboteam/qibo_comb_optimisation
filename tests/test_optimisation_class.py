@@ -221,6 +221,7 @@ def test_qubo_to_qaoa_circuit(gammas, betas, alphas):
 @pytest.mark.parametrize(
     "gammas, betas",
     [
+        ([0.1], [0.2]),
         ([0.1, 0.2], [0.3]),
         ([0.1, 0.2], [0.3, 0.4]),
         ([0.1, 0.2], [0.3, 0.4, 0.5]),
