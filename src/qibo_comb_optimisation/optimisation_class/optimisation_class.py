@@ -1,10 +1,9 @@
 import itertools
-import math
-import random
 from collections import defaultdict
 
 import numpy as np
 from qibo import Circuit, gates, hamiltonians
+from qibo.backends import _check_backend
 from qibo.config import raise_error
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models import QAOA
@@ -164,13 +163,15 @@ class QUBO:
             if alpha:
                 circuit.add(gates.RY(i, 2 * alpha))
 
-    def _build(self, gammas, betas, alphas=None, mixer_function=None):
+    def _build(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Construct the full QAOA circuit for the Ising model with p layers.
-        `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
-        If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
+        custom_mixer (List[qibo.models.Circuit]): An optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
         """
-        p = len(gammas)  # Necessary?
+        p = len(gammas)
 
         # Apply initial Hadamard gates (uniform superposition)
         circuit = Circuit(self.n)
@@ -184,8 +185,29 @@ class QUBO:
             if alphas is not None:
                 self._default_mixer(circuit, betas[layer], alphas[layer])
             else:
-                if mixer_function:
-                    circuit += mixer_function
+                if custom_mixer:
+                    if len(gammas) != len(betas):
+                        raise_error(ValueError, f"Input len(gammas) != len(betas).")
+
+                    if len(custom_mixer) == 1:
+                        circuit += custom_mixer[0]
+                    elif len(custom_mixer) == len(gammas):
+                        circuit += custom_mixer[layer]
+
+                    # print("<<< OLD <<<")
+                    # for data in custom_mixer[layer].raw['queue']:
+                    #     print(data)
+
+                    num_param_gates = len(
+                        custom_mixer[layer].trainable_gates
+                    )  # sum(1 for data in custom_mixer[layer].raw['queue'] if data['name'] == 'crx')
+                    new_beta = np.repeat(betas[layer], num_param_gates)
+                    custom_mixer[layer].set_parameters(new_beta)
+
+                    # print(">>> NEW >>>")
+                    # for data in custom_mixer[layer].raw['queue']:
+                    #     print(data)
+
                 else:
                     self._default_mixer(circuit, betas[layer])
 
@@ -466,7 +488,7 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, mixer_function=None):
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Constructs a QAOA circuit for the given QUBO problem.
 
@@ -475,8 +497,10 @@ class QUBO:
         gammas: parameters for phasers
         betas: parameters for X mixers
         alphas: parameters for Y mixers
-        mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
-        and produce the mixer circuit, currently we assume it takes in one parameter.
+        custom_mixer (List[qibo.models.Circuit]): optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
 
         Returns
         -------
@@ -486,23 +510,25 @@ class QUBO:
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             return self._build(gammas, betas, alphas)
         else:
-            if mixer_function:
+            if custom_mixer:
                 return self._build(
-                    gammas, betas, alphas=None, mixer_function=mixer_function
+                    gammas, betas, alphas=None, custom_mixer=custom_mixer
                 )
             else:
                 return self._build(gammas, betas)
 
     def train_QAOA(
         self,
-        p,
-        nshots=10,
-        regular_QAOA=True,
+        gammas,
+        betas,
+        alphas=None,
+        nshots=int(1e3),
         regular_loss=True,
         maxiter=10,
         method="cobyla",
         cvar_delta=0.25,
-        mixer_function=None,
+        custom_mixer=None,
+        backend=None,
     ):
         """
 
@@ -515,49 +541,38 @@ class QUBO:
         maxiter: maximum iterations
         method: classical optimizer
         cvar_delta: if CVaR is used, this is the threshold
-        mixer_function: function defining a custom mixer (optional)
-
-        Returns frequencies
+        custom_mixer: function defining a custom mixer (optional)
+        backend: include backend argument
+        Returns best, params, extra  # frequencies
         -------
 
         """
-        gammas = [random.uniform(0, 2 * math.pi) for i in range(p)]
-        betas = [random.uniform(0, 2 * math.pi) for i in range(p)]
-        if regular_QAOA:
-            circuit = self.qubo_to_qaoa_circuit(gammas, betas)
-            # n_params = 2*p
-            parameters = []
-            for i in range(p):
-                parameters.append(gammas[i])
-                parameters.append(betas[i])
-        else:
-            alphas = [random.uniform(0, 2 * math.pi) for i in range(p)]
-            circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
-            # n_params = 3*p
-            parameters = []
-            for i in range(p):
-                parameters.append(gammas[i])
-                parameters.append(betas[i])
+
+        backend = _check_backend(backend)
+
+        circuit = self.qubo_to_qaoa_circuit(
+            gammas, betas, alphas=alphas, custom_mixer=custom_mixer
+        )
+        p = len(gammas)
+        n_params = 3 * p if alphas else 2 * p
+        parameters = []
+        for i in range(p):
+            parameters.append(gammas[i])
+            parameters.append(betas[i])
+            if alphas:
                 parameters.append(alphas[i])
-        # we have prepared the circuit, now we want to train them
 
         if regular_loss:
 
             def myloss(parameters):
                 # parameters to be optimize is the input, the output is a counter object
-                # circuit.set_parameters(parameters)  #this step is wrong
-                m = len(parameters)
-                if regular_QAOA:
-                    gammas = parameters[: m // 2]
-                    betas = parameters[m // 2 :]
-                    circuit = self.qubo_to_qaoa_circuit(
-                        gammas, betas, mixer_function=mixer_function
-                    )
-                else:
-                    gammas = parameters[: m // 3]
-                    betas = parameters[m // 3 : 2 * m // 3]
-                    alphas = parameters[2 * m // 3 :]
-                    circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
+                circuit = self.qubo_to_qaoa_circuit(
+                    gammas, betas, alphas=alphas, custom_mixer=custom_mixer
+                )
+                print(">> Optimisation step:\n")
+                for data in circuit.raw["queue"]:
+                    print(data)
+
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
                 energy_dict = defaultdict(int)
@@ -580,17 +595,14 @@ class QUBO:
                 Returns:
                 - CVaR: The computed CVaR value.
                 """
-                m = len(parameters)
-                if regular_QAOA:
-                    gammas = parameters[: m // 2]
-                    betas = parameters[m // 2 :]
-                    circuit = self.qubo_to_qaoa_circuit(gammas, betas)
-                else:
-                    gammas = parameters[: m // 3]
-                    betas = parameters[m // 3 : 2 * m // 3]
-                    alphas = parameters[2 * m // 3 :]
-                    circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
-                result = circuit(None, nshots)
+                circuit = self.qubo_to_qaoa_circuit(
+                    gammas, betas, alphas=alphas, custom_mixer=custom_mixer
+                )
+                print(">> Optimisation step:\n")
+                for data in circuit.raw["queue"]:
+                    print(data)
+
+                result = backend.execute_circuit(circuit, nshots=1000)
                 result_counter = result.frequencies(binary=True)
 
                 energy_dict = defaultdict(int)
@@ -633,19 +645,21 @@ class QUBO:
         best, params, extra = optimize(
             myloss, parameters, method=method, options={"maxiter": maxiter}
         )
-        # unpack params
         m = len(params)
-        if regular_QAOA:
-            gammas = params[: m // 2]
-            betas = params[m // 2 :]
-            circuit = self.qubo_to_qaoa_circuit(gammas, betas)
-        else:
-            gammas = params[: m // 3]
-            betas = params[m // 3 : 2 * m // 3]
-            alphas = params[2 * m // 3 :]
-            circuit = self.qubo_to_qaoa_circuit(gammas, betas, alphas)
-        result = circuit(None, nshots)
-        return result.frequencies(binary=True)
+        optimised_gammas = params[: m // 2] if alphas is None else params[: m // 3]
+        optimised_betas = (
+            params[m // 2 :] if alphas is None else params[m // 3 : 2 * m // 3]
+        )
+        optimised_alphas = None if alphas is None else params[2 * m // 3 :]
+        circuit = self.qubo_to_qaoa_circuit(
+            gammas=optimised_gammas,
+            betas=optimised_betas,
+            alphas=optimised_alphas,
+            custom_mixer=custom_mixer,
+        )
+        result = backend.execute_circuit(circuit, nshots=1000)
+
+        return best, params, extra, circuit, result.frequencies(binary=True)
 
     def qubo_to_qaoa_object(self, params: list = None):
         """
