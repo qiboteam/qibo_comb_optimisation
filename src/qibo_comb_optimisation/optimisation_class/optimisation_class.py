@@ -189,20 +189,24 @@ class QUBO:
                     if len(gammas) != len(betas):
                         raise_error(ValueError, f"Input len(gammas) != len(betas).")
 
+                    # Extract number of betas per layer
+                    betas_per_layer = self.num_betas // self.n_layers
                     if len(custom_mixer) == 1:
-                        circuit += custom_mixer[0]
+                        circuit += custom_mixer[0](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
                     elif len(custom_mixer) == len(gammas):
-                        circuit += custom_mixer[layer]
+                        circuit += custom_mixer[layer](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
+                    else:
+                        raise_error(ValueError, "Invalid custom_mixer length.")
 
                     # print("<<< OLD <<<")
                     # for data in custom_mixer[layer].raw['queue']:
                     #     print(data)
 
-                    num_param_gates = len(
-                        custom_mixer[layer].trainable_gates
-                    )  # sum(1 for data in custom_mixer[layer].raw['queue'] if data['name'] == 'crx')
-                    new_beta = np.repeat(betas[layer], num_param_gates)
-                    custom_mixer[layer].set_parameters(new_beta)
+                    # num_param_gates = len(
+                    #     custom_mixer[layer].trainable_gates
+                    # )  # sum(1 for data in custom_mixer[layer].raw['queue'] if data['name'] == 'crx')
+                    # new_beta = np.repeat(betas[layer], num_param_gates)
+                    # custom_mixer[layer].set_parameters(new_beta)
 
                     # print(">>> NEW >>>")
                     # for data in custom_mixer[layer].raw['queue']:
@@ -519,9 +523,10 @@ class QUBO:
 
     def train_QAOA(
         self,
-        gammas,
-        betas,
+        gammas=None,
+        betas=None,
         alphas=None,
+        p=None,
         nshots=int(1e3),
         regular_loss=True,
         maxiter=10,
@@ -555,10 +560,32 @@ class QUBO:
 
         backend = _check_backend(backend)
 
+        if p is None and gammas is None:
+            raise_error(
+                ValueError,
+                "Either p or gammas must be provided to define the number of layers.",
+            )
+        elif p is None:
+            p = len(gammas)
+
+        elif gammas is None:
+            # if no gammas are provided, we randomly generate them to be between 0 and 2pi
+            gammas = np.random.rand(p) * 2 * np.pi
+            betas = np.random.rand(p) * 2 * np.pi
+        else:
+            if len(gammas) != p:
+                raise_error(
+                    ValueError,
+                    f"gammas must be of length {p}, but got {len(gammas)}.",
+                )
+
+        self.n_layers = p
+        self.num_betas = len(betas)
+
         circuit = self.qubo_to_qaoa_circuit(
             gammas, betas, alphas=alphas, custom_mixer=custom_mixer
         )
-        p = len(gammas)
+    
         n_params = 3 * p if alphas else 2 * p
 
         # Block packing: [all gammas][all betas][all alphas]

@@ -273,9 +273,9 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
 
-    SVP_mixers = []
-    for idx_beta in range(0, len(betas)):
-        SVP_mixers.append(_create_svp_mixer(name_to_index, betas[idx_beta]))
+
+    # SVP_mixers is now a list of functions that take beta and return a circuit
+    SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
 
     if len(betas) != len(gammas):
         with pytest.raises(ValueError):
@@ -392,9 +392,9 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
 
-    SVP_mixers = []
-    for idx_beta in range(0, len(betas)):
-        SVP_mixers.append(_create_svp_mixer(name_to_index, betas[idx_beta]))
+
+    # SVP_mixers is now a list of functions that take beta and return a circuit
+    SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
 
     result = QUBO(0, numeric_qubo).train_QAOA(
         gammas=gammas,
