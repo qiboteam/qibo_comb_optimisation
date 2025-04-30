@@ -339,6 +339,26 @@ def test_train_QAOA_convex_qubo():
     # The bitstring should be '00' (for x0=0, x1=0)
     assert most_freq == '00', f"Expected ground state '00', got {most_freq}"
 
+def test_train_QAOA_edge_cases():
+    Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+    qp = QUBO(0, Qdict)
+
+    # 1. Neither p nor gammas provided: should raise ValueError
+    with pytest.raises(ValueError, match="Either p or gammas must be provided"):
+        qp.train_QAOA()
+
+    # 2. gammas provided with wrong length for p: should raise ValueError
+    with pytest.raises(ValueError, match="gammas must be of length 2"):
+        qp.train_QAOA(gammas=[0.1], betas=[0.2], p=2)
+
+    # 3. Only p provided: should generate random gammas/betas and run
+    # Should not raise, just check output types
+    result = qp.train_QAOA(p=2)
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], np.ndarray)
+    assert isinstance(result[3], Circuit)
+    assert isinstance(result[4], dict)
+
 @pytest.mark.parametrize(
     "gammas, betas, alphas, reg_loss, cvar_delta",
     [
