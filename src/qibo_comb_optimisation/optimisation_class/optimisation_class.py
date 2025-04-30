@@ -619,7 +619,7 @@ class QUBO:
                 for data in circuit.raw["queue"]:
                     print(data)
 
-                result = backend.execute_circuit(circuit, nshots=1000)
+                result = backend.execute_circuit(circuit, nshots=nshots)
                 result_counter = result.frequencies(binary=True)
 
                 energy_dict = defaultdict(int)
@@ -662,19 +662,22 @@ class QUBO:
         best, params, extra = optimize(
             myloss, parameters, method=method, options={"maxiter": maxiter}
         )
-        m = len(params)
-        optimised_gammas = params[: m // 2] if alphas is None else params[: m // 3]
-        optimised_betas = (
-            params[m // 2 :] if alphas is None else params[m // 3 : 2 * m // 3]
-        )
-        optimised_alphas = None if alphas is None else params[2 * m // 3 :]
+        # Unpack optimized parameters in the same way as in myloss
+        if alphas is not None:
+            optimised_gammas = params[::3]
+            optimised_betas = params[1::3]
+            optimised_alphas = params[2::3]
+        else:
+            optimised_gammas = params[::2]
+            optimised_betas = params[1::2]
+            optimised_alphas = None
         circuit = self.qubo_to_qaoa_circuit(
             gammas=optimised_gammas,
             betas=optimised_betas,
             alphas=optimised_alphas,
             custom_mixer=custom_mixer,
         )
-        result = backend.execute_circuit(circuit, nshots=1000)
+        result = backend.execute_circuit(circuit, nshots=nshots)
 
         return best, params, extra, circuit, result.frequencies(binary=True)
 
