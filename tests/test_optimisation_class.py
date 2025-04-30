@@ -322,6 +322,22 @@ def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta):
     assert isinstance(result[3], Circuit)
     assert isinstance(result[4], dict)
 
+def test_train_qaoa_convex_qubo():
+    
+    Qdict = {(0, 0): 2.0, (1, 1): 2.0}
+   
+    qp = QUBO(0, Qdict)
+    # The minimum is at x = [0, 0], f([0,0]) = 0
+    # Use a small number of layers and shots for a fast test
+    gammas = [0.1, 0.21]
+    betas = [0.2, 0.3]
+
+    # Train QAOA with 50 iterations. Should be enough to find the minimum.
+    best, params, extra, circuit, freqs = qp.train_QAOA(gammas, betas, nshots=200, maxiter=50)
+    # Convert result keys to bitstrings
+    most_freq = max(freqs, key=freqs.get)
+    # The bitstring should be '00' (for x0=0, x1=0)
+    assert most_freq == '00', f"Expected ground state '00', got {most_freq}"
 
 @pytest.mark.parametrize(
     "gammas, betas, alphas, reg_loss, cvar_delta",
