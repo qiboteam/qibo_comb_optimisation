@@ -543,8 +543,13 @@ class QUBO:
         cvar_delta: if CVaR is used, this is the threshold
         custom_mixer: function defining a custom mixer (optional)
         backend: include backend argument
-        Returns best, params, extra  # frequencies
+
+        Parameter packing convention:
+            - Block format: [all gammas][all betas][all alphas] (if alphas is not None)
+            - Otherwise: [all gammas][all betas]
+        Returns
         -------
+        best, params, extra, circuit, frequencies
 
         """
 
@@ -555,27 +560,27 @@ class QUBO:
         )
         p = len(gammas)
         n_params = 3 * p if alphas else 2 * p
-        parameters = []
-        for i in range(p):
-            parameters.append(gammas[i])
-            parameters.append(betas[i])
-            if alphas is not None:
-                parameters.append(alphas[i])
+
+        # Block packing: [all gammas][all betas][all alphas]
+        parameters = list(gammas) + list(betas)
+        if alphas is not None:
+            parameters += list(alphas)
+
 
         if regular_loss:
 
             def myloss(parameters):
-                m = len(parameters)
+                p = len(gammas)
                 if alphas is not None:
-                    gammas = parameters[::3]
-                    betas = parameters[1::3]
-                    unpacked_alphas = parameters[2::3]
+                    gammas_ = parameters[:p]
+                    betas_ = parameters[p:2*p]
+                    unpacked_alphas = parameters[2*p:3*p]
                 else:
-                    gammas = parameters[::2]
-                    betas = parameters[1::2]
+                    gammas_ = parameters[:p]
+                    betas_ = parameters[p:2*p]
                     unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
-                    gammas, betas, alphas=unpacked_alphas, custom_mixer=custom_mixer
+                    gammas_, betas_, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
                 print(">> Optimisation step:\n")
                 for data in circuit.raw["queue"]:
@@ -605,15 +610,15 @@ class QUBO:
                 """
                 m = len(parameters)
                 if alphas is not None:
-                    gammas = parameters[::3]
-                    betas = parameters[1::3]
-                    unpacked_alphas = parameters[2::3]
+                    gammas_ = parameters[:p]
+                    betas_ = parameters[p:2*p]
+                    unpacked_alphas = parameters[2*p:3*p]
                 else:
-                    gammas = parameters[::2]
-                    betas = parameters[1::2]
+                    gammas_ = parameters[:p]
+                    betas_ = parameters[p:2*p]
                     unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
-                    gammas, betas, alphas=unpacked_alphas, custom_mixer=custom_mixer
+                    gammas_, betas_, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
                 print(">> Optimisation step:\n")
                 for data in circuit.raw["queue"]:
@@ -662,14 +667,14 @@ class QUBO:
         best, params, extra = optimize(
             myloss, parameters, method=method, options={"maxiter": maxiter}
         )
-        # Unpack optimized parameters in the same way as in myloss
+        # Unpack optimized parameters in the same way as in myloss (block format)
         if alphas is not None:
-            optimised_gammas = params[::3]
-            optimised_betas = params[1::3]
-            optimised_alphas = params[2::3]
+            optimised_gammas = params[:p]
+            optimised_betas = params[p:2*p]
+            optimised_alphas = params[2*p:3*p]
         else:
-            optimised_gammas = params[::2]
-            optimised_betas = params[1::2]
+            optimised_gammas = params[:p]
+            optimised_betas = params[p:2*p]
             optimised_alphas = None
         circuit = self.qubo_to_qaoa_circuit(
             gammas=optimised_gammas,
@@ -688,7 +693,9 @@ class QUBO:
         Parameters
         ----------
         params : list, optional
-            parameters for QAOA
+            parameters for QAOA, packed in block format:
+                [all gammas][all betas][all alphas] (if alphas is not None)
+                otherwise [all gammas][all betas]
         Returns
         -------
         circuit : qibo.models.QAOA
