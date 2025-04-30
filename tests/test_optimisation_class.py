@@ -322,7 +322,7 @@ def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta):
     assert isinstance(result[3], Circuit)
     assert isinstance(result[4], dict)
 
-def test_train_qaoa_convex_qubo():
+def test_train_QAOA_convex_qubo():
     
     Qdict = {(0, 0): 2.0, (1, 1): 2.0}
    
