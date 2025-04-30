@@ -333,7 +333,7 @@ def test_train_QAOA_convex_qubo():
     betas = [0.2, 0.3, 0.15]
 
     # Train QAOA with 100 iterations. Should be enough to find the minimum.
-    best, params, extra, circuit, freqs = qp.train_QAOA(gammas, betas, nshots=200, maxiter=100)
+    best, params, extra, circuit, freqs = qp.train_QAOA(gammas, betas, nshots=1000, maxiter=100)
     # Convert result keys to bitstrings
     most_freq = max(freqs, key=freqs.get)
     # The bitstring should be '00' (for x0=0, x1=0)
