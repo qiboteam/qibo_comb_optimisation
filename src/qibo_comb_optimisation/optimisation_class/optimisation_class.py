@@ -1,10 +1,9 @@
 import itertools
-import math
-import random
 from collections import defaultdict
 
 import numpy as np
 from qibo import Circuit, gates, hamiltonians
+from qibo.backends import _check_backend
 from qibo.config import raise_error
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models import QAOA
@@ -164,13 +163,15 @@ class QUBO:
             if alpha:
                 circuit.add(gates.RY(i, 2 * alpha))
 
-    def _build(self, gammas, betas, alphas=None, mixer_function=None):
+    def _build(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Construct the full QAOA circuit for the Ising model with p layers.
-        `mixer_functions` is an external function that generates a circuit representing the mixer Hamiltonian.
-        If `mixer_function`, simply append the circuit to the original. Error will be raised if the mixer circuit has mismatched nqubits.
+        custom_mixer (List[qibo.models.Circuit]): An optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
         """
-        p = len(gammas)  # Necessary?
+        p = len(gammas)
 
         # Apply initial Hadamard gates (uniform superposition)
         circuit = Circuit(self.n)
@@ -208,6 +209,7 @@ class QUBO:
                     # print(">>> NEW >>>")
                     # for data in custom_mixer[layer].raw['queue']:
                     #     print(data)
+
                 else:
                     self._default_mixer(circuit, betas[layer])
 
@@ -488,7 +490,7 @@ class QUBO:
                     self.Qdict.pop((j, i), None)
         return self.Qdict
 
-    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, mixer_function=None):
+    def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, custom_mixer=None):
         """
         Constructs a QAOA circuit for the given QUBO problem.
 
@@ -497,8 +499,10 @@ class QUBO:
         gammas: parameters for phasers
         betas: parameters for X mixers
         alphas: parameters for Y mixers
-        mixer_function: optional function that constructs the mixer circuit, this function can take in parameters
-        and produce the mixer circuit, currently we assume it takes in one parameter.
+        custom_mixer (List[qibo.models.Circuit]): optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
 
         Returns
         -------
@@ -508,9 +512,9 @@ class QUBO:
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             return self._build(gammas, betas, alphas)
         else:
-            if mixer_function:
+            if custom_mixer:
                 return self._build(
-                    gammas, betas, alphas=None, mixer_function=mixer_function
+                    gammas, betas, alphas=None, custom_mixer=custom_mixer
                 )
             else:
                 return self._build(gammas, betas)
@@ -526,7 +530,8 @@ class QUBO:
         maxiter=10,
         method="cobyla",
         cvar_delta=0.25,
-        mixer_function=None,
+        custom_mixer=None,
+        backend=None,
     ):
         """
 
@@ -541,14 +546,16 @@ class QUBO:
         cvar_delta: if CVaR is used, this is the threshold
         custom_mixer: function defining a custom mixer (optional)
         backend: include backend argument
+
         Parameter packing convention:
             - Block format: [all gammas][all betas][all alphas] (if alphas is not None)
             - Otherwise: [all gammas][all betas]
-        Returns frequencies
+        Returns
         -------
         best, params, extra, circuit, frequencies
 
         """
+
         backend = _check_backend(backend)
 
         if p is None and gammas is None:
@@ -583,6 +590,8 @@ class QUBO:
         parameters = list(gammas) + list(betas)
         if alphas is not None:
             parameters += list(alphas)
+
+
         if regular_loss:
 
             def myloss(parameters):
@@ -601,6 +610,7 @@ class QUBO:
                 # print(">> Optimisation step:\n")
                 # for data in circuit.raw["queue"]:
                 #     print(data)
+
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
                 energy_dict = defaultdict(int)
@@ -700,6 +710,7 @@ class QUBO:
         result = backend.execute_circuit(circuit, nshots=nshots)
         
         return best, params, extra, circuit, result.frequencies(binary=True)
+
     def qubo_to_qaoa_object(self, params: list = None):
         """
         Generates a QAOA circuit for the QUBO problem.
