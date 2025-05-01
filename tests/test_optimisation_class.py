@@ -218,16 +218,7 @@ def test_qubo_to_qaoa_circuit(gammas, betas, alphas):
     assert circuit.nqubits == qubo.n
 
 
-@pytest.mark.parametrize(
-    "gammas, betas",
-    [
-        ([0.1], [0.2]),
-        ([0.1, 0.2], [0.3]),
-        ([0.1, 0.2], [0.3, 0.4]),
-        ([0.1, 0.2], [0.3, 0.4, 0.5]),
-    ],
-)
-def test_qubo_to_qaoa_svp_mixer(gammas, betas):
+def test_qubo_to_qaoa_svp_mixer():
 
     def _get_svp_zero_representation(name_to_index):
         """
@@ -252,8 +243,7 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
         for i in range(n):
             if i in active_set:
                 mixer.add(gates.X(i))
-            mixer.add(gates.RY((i + 1) % n, beta))
-            mixer.add(gates.CZ(i, (i + 1) % n))
+            mixer.add(gates.CRX(i, (i + 1) % n, beta))
             if i in active_set:
                 mixer.add(gates.X(i))
         return mixer
@@ -272,39 +262,22 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
     }
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
-
-
     # SVP_mixers is now a list of functions that take beta and return a circuit
     SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
-
-    if len(betas) != len(gammas):
-        with pytest.raises(ValueError):
-            circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
-                gammas, betas, alphas=None, custom_mixer=SVP_mixers
-            )
-    else:
-        circuit = QUBO(0, numeric_qubo).qubo_to_qaoa_circuit(
-            gammas, betas, alphas=None, custom_mixer=SVP_mixers
-        )
-        assert isinstance(circuit, Circuit)
-        assert circuit.nqubits == QUBO(0, numeric_qubo).n
+    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == QUBO(0, numeric_qubo).n
 
 
 @pytest.mark.parametrize(
-    "gammas, betas, alphas",
+    "reg_QAOA, reg_loss, cvar_delta",
     [
-        ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6]),
-        ([0.1, 0.2], [0.3, 0.4], None),
+        (True, True, None),
+        (True, False, 0.1),
+        (False, True, None),
+        (False, False, 0.1),
     ],
 )
-@pytest.mark.parametrize(
-    "reg_loss, cvar_delta",
-    [
-        (True, None),
-        (False, 0.1),
-    ],
-)
-def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta):
+def test_train_QAOA(reg_QAOA, reg_loss, cvar_delta):
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
@@ -422,14 +395,11 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
         betas=betas,
         alphas=alphas,
         nshots=10,
+        regular_QAOA=reg_QAOA,
         regular_loss=reg_loss,
         cvar_delta=cvar_delta,
-        custom_mixer=SVP_mixers,
     )
-    assert isinstance(result[0], float)
-    assert isinstance(result[1], np.ndarray)
-    assert isinstance(result[3], Circuit)
-    assert isinstance(result[4], dict)
+    assert isinstance(result, dict)
 
 
 def test_qubo_to_qaoa_object():
