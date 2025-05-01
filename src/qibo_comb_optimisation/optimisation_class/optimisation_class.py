@@ -607,9 +607,9 @@ class QUBO:
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas_, betas_, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
-                print(">> Optimisation step:\n")
-                for data in circuit.raw["queue"]:
-                    print(data)
+                # print(">> Optimisation step:\n")
+                # for data in circuit.raw["queue"]:
+                #     print(data)
 
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
