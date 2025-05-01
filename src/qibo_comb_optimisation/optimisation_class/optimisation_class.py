@@ -708,7 +708,7 @@ class QUBO:
             custom_mixer=custom_mixer,
         )
         result = backend.execute_circuit(circuit, nshots=nshots)
-
+        
         return best, params, extra, circuit, result.frequencies(binary=True)
 
     def qubo_to_qaoa_object(self, params: list = None):
