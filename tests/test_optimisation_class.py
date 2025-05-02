@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qibo import Circuit, gates
 from qibo.models import QAOA
+from qibo.noise import DepolarizingError, NoiseModel
 from qibo.optimizers import optimize as optimize
 from qibo.quantum_info import infidelity
 
@@ -247,7 +248,7 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
         n = 0
         for i in name_to_index:
             n += 1
-        mixer = Circuit(n)
+        mixer = Circuit(n, density_matrix=True)
         active_set = _get_svp_zero_representation(name_to_index)
         for i in range(n):
             if i in active_set:
@@ -273,9 +274,11 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
 
-
     # SVP_mixers is now a list of functions that take beta and return a circuit
-    SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
+    SVP_mixers = [
+        lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta)
+        for idx in range(len(betas))
+    ]
 
     if len(betas) != len(gammas):
         with pytest.raises(ValueError):
@@ -304,10 +307,15 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
         (False, 0.1),
     ],
 )
-def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta):
+@pytest.mark.parametrize("noise_model", [(True, False)])
+def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta, noise_model):
     h = {0: 1, 1: -1}
     J = {(0, 1): 0.5}
     qubo = QUBO(0, h, J)
+    if noise_model:
+        lam = 0.1
+        noise_model = NoiseModel()
+        noise_model.add(DepolarizingError(lam))
 
     result = qubo.train_QAOA(
         gammas=gammas,
@@ -316,16 +324,18 @@ def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta):
         nshots=10,
         regular_loss=reg_loss,
         cvar_delta=cvar_delta,
+        noise_model=noise_model,
     )
     assert isinstance(result[0], float)
     assert isinstance(result[1], np.ndarray)
     assert isinstance(result[3], Circuit)
     assert isinstance(result[4], dict)
 
+
 def test_train_QAOA_convex_qubo():
-    
+
     Qdict = {(0, 0): 2.0, (1, 1): 2.0}
-   
+
     qp = QUBO(0, Qdict)
     # The minimum is at x = [0, 0], f([0,0]) = 0
     # Use a small number of layers and shots for a fast test
@@ -333,11 +343,14 @@ def test_train_QAOA_convex_qubo():
     betas = [0.2, 0.3, 0.15]
 
     # Train QAOA with 100 iterations. Should be enough to find the minimum.
-    best, params, extra, circuit, freqs = qp.train_QAOA(gammas, betas, nshots=1000, maxiter=100)
+    best, params, extra, circuit, freqs = qp.train_QAOA(
+        gammas, betas, nshots=1000, maxiter=100
+    )
     # Convert result keys to bitstrings
     most_freq = max(freqs, key=freqs.get)
     # The bitstring should be '00' (for x0=0, x1=0)
-    assert most_freq == '00', f"Expected ground state '00', got {most_freq}"
+    assert most_freq == "00", f"Expected ground state '00', got {most_freq}"
+
 
 def test_train_QAOA_edge_cases():
     Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
@@ -358,6 +371,7 @@ def test_train_QAOA_edge_cases():
     assert isinstance(result[1], np.ndarray)
     assert isinstance(result[3], Circuit)
     assert isinstance(result[4], dict)
+
 
 @pytest.mark.parametrize(
     "gammas, betas, alphas, reg_loss, cvar_delta",
@@ -386,7 +400,7 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
         n = 0
         for i in name_to_index:
             n += 1
-        mixer = Circuit(n)
+        mixer = Circuit(n, density_matrix=True)
         active_set = _get_svp_zero_representation(name_to_index)
         for i in range(n):
             if i in active_set:
@@ -412,10 +426,11 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
     offset = 5.0
     name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
 
-
-
     # SVP_mixers is now a list of functions that take beta and return a circuit
-    SVP_mixers = [lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta) for idx in range(len(betas))]
+    SVP_mixers = [
+        lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta)
+        for idx in range(len(betas))
+    ]
 
     result = QUBO(0, numeric_qubo).train_QAOA(
         gammas=gammas,
@@ -425,6 +440,155 @@ def test_train_QAOA_svp_mixer(gammas, betas, alphas, reg_loss, cvar_delta):
         regular_loss=reg_loss,
         cvar_delta=cvar_delta,
         custom_mixer=SVP_mixers,
+    )
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], np.ndarray)
+    assert isinstance(result[3], Circuit)
+    assert isinstance(result[4], dict)
+
+
+@pytest.mark.parametrize(
+    "gammas, betas, alphas, reg_loss, cvar_delta",
+    [
+        ([0.1, 0.2], [0.3, 0.4], None, True, None),
+        ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6], False, 0.1),
+    ],
+)
+def test_train_QAOA_svp_mixer_lambda(gammas, betas, alphas, reg_loss, cvar_delta):
+
+    def _get_svp_zero_representation(name_to_index):
+        """
+        :return: a set of indices where it takes values 1, this is to help constructing the mixer
+        """
+        active_set = set()
+        for key in name_to_index:
+            if "x" in key or "y" in key:
+                active_set.add(name_to_index[key])
+        return active_set
+
+    def _create_svp_mixer(name_to_index, beta):
+        """
+        :param name_to_index: a name to index mapping required to create mixer to preserve probability of 0
+        :return: mixer circuit
+        """
+        n = 0
+        for i in name_to_index:
+            n += 1
+        mixer = Circuit(n, density_matrix=True)
+        active_set = _get_svp_zero_representation(name_to_index)
+        for i in range(n):
+            if i in active_set:
+                mixer.add(gates.X(i))
+            mixer.add(gates.RY((i + 1) % n, beta))
+            mixer.add(gates.CZ(i, (i + 1) % n))
+            if i in active_set:
+                mixer.add(gates.X(i))
+        return mixer
+
+    numeric_qubo = {
+        (0, 4): 4.0,
+        (2, 4): 4.0,
+        (3, 1): 6.0,
+        (1, 1): -3.0,
+        (3, 5): 2.0,
+        (4, 4): -1.0,
+        (3, 3): -3.0,
+        (1, 5): 6.0,
+        (2, 0): 8.0,
+        (5, 5): -3.0,
+    }
+    offset = 5.0
+    name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
+
+    mixer_lambda = lambda beta: _create_svp_mixer(name_to_index, beta)
+
+    result = QUBO(0, numeric_qubo).train_QAOA(
+        gammas=gammas,
+        betas=betas,
+        alphas=alphas,
+        nshots=10,
+        regular_loss=reg_loss,
+        cvar_delta=cvar_delta,
+        custom_mixer=[mixer_lambda],
+    )
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], np.ndarray)
+    assert isinstance(result[3], Circuit)
+    assert isinstance(result[4], dict)
+
+
+@pytest.mark.parametrize(
+    "gammas, betas, alphas, reg_loss, cvar_delta",
+    [
+        ([0.1, 0.2], [0.3, 0.4], None, True, None),
+        ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6], False, 0.1),
+    ],
+)
+def test_train_QAOA_svp_mixer_noise_model(gammas, betas, alphas, reg_loss, cvar_delta):
+
+    def _get_svp_zero_representation(name_to_index):
+        """
+        :return: a set of indices where it takes values 1, this is to help constructing the mixer
+        """
+        active_set = set()
+        for key in name_to_index:
+            if "x" in key or "y" in key:
+                active_set.add(name_to_index[key])
+        return active_set
+
+    def _create_svp_mixer(name_to_index, beta):
+        """
+        :param name_to_index: a name to index mapping required to create mixer to preserve probability of 0
+        :return: mixer circuit
+        """
+        n = 0
+        for i in name_to_index:
+            n += 1
+        mixer = Circuit(n, density_matrix=True)
+        active_set = _get_svp_zero_representation(name_to_index)
+        for i in range(n):
+            if i in active_set:
+                mixer.add(gates.X(i))
+            mixer.add(gates.RY((i + 1) % n, beta))
+            mixer.add(gates.CZ(i, (i + 1) % n))
+            if i in active_set:
+                mixer.add(gates.X(i))
+        return mixer
+
+    numeric_qubo = {
+        (0, 4): 4.0,
+        (2, 4): 4.0,
+        (3, 1): 6.0,
+        (1, 1): -3.0,
+        (3, 5): 2.0,
+        (4, 4): -1.0,
+        (3, 3): -3.0,
+        (1, 5): 6.0,
+        (2, 0): 8.0,
+        (5, 5): -3.0,
+    }
+    offset = 5.0
+    name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
+
+    lam = 0.1
+    noise_model = NoiseModel()
+    noise_model.add(DepolarizingError(lam))
+
+    # SVP_mixers is now a list of functions that take beta and return a circuit
+    SVP_mixers = [
+        lambda beta, idx=idx: _create_svp_mixer(name_to_index, beta)
+        for idx in range(len(betas))
+    ]
+
+    result = QUBO(0, numeric_qubo).train_QAOA(
+        gammas=gammas,
+        betas=betas,
+        alphas=alphas,
+        nshots=10,
+        regular_loss=reg_loss,
+        cvar_delta=cvar_delta,
+        custom_mixer=SVP_mixers,
+        noise_model=noise_model,
     )
     assert isinstance(result[0], float)
     assert isinstance(result[1], np.ndarray)
