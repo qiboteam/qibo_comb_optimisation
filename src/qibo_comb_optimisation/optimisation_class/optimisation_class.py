@@ -703,8 +703,8 @@ class QUBO:
         )
         if noise_model is not None:
             circuit = noise_model.apply(circuit)
-        print("Final circuit:\n")
-        print(circuit)
+        # print("Final circuit:\n")
+        # print(circuit)
 
         result = backend.execute_circuit(circuit, nshots=nshots)
 
