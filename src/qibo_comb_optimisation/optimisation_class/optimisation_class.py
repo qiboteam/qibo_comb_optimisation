@@ -12,58 +12,6 @@ from qibo.symbols import Z
 
 
 class QUBO:
-    """A class used to represent either a Quadratic Unconstrained Binary Optimization (QUBO)
-        problem or Ising model.
-
-    Args:
-        offset (float): The constant offset of the QUBO problem.
-        args (dict or numpy arrays): If len(args)==1, args is a dictionary representing the
-            quadratic coefficient of QUBO. If len(args)==2, args is a list of two dictionaries
-            representing the coefficients for the Ising model.
-        n (int): Number of variables involved in the problem.
-
-    Methods:
-        multiply_scalar(scalar: float):
-            Multiplies all the coefficients by a scalar value.
-
-        qubo_to_ising() -> Tuple[dict, dict, float]:
-            Converts the QUBO problem into Ising model parameters.
-
-        evaluate_f(x: List[int]) -> float:
-            Evaluates the quadratic function for a given binary vector.
-
-        evaluate_grad_f(x: List[int]) -> List[float]:
-            Evaluates the gradient of the quadratic function at a given binary vector.
-
-        tabu_search(max_iterations: int, tabu_size: int) -> Tuple[List[int], float]:
-            Solves the QUBO problem using the Tabu search algorithm.
-
-        brute_force() -> Tuple[List[int], float]:
-            Solves the QUBO problem by exhaustively evaluating all possible solutions.
-
-        _phase_separation(circuit: qibo.models.Circuit, gamma: List[float]: -> qibo.models.Circuit
-            Apply the phase separation layer (corresponding to the Ising model Hamiltonian) to encode interaction terms into the quantum circuit.
-
-        _default_mixer(circuit: qibo.models.Circuit, beta: List[float], alpha: Optional[List[float]]): -> qibp.models.Circuit
-            Apply the mixer layer (uniform superposition evolution) with RX rotations on each qubit to spread the superposition.
-
-        _build(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
-            Construct the full QAOA circuit for the Ising model with p=len(gamma)/2 layers.
-            `mixer_function` is an optional argument that takes as input a circuit representing a custom mixer Hamiltonian and appends it to the original circuit.
-            An error will be raised if the mixer circuit has mismatched circuit width (differing nqubits).
-
-        construct_symbolic_Hamiltonian_from_QUBO():
-            Constructs a symbolic Hamiltonian from the QUBO problem by converting it
-            to an Ising model.
-
-        canonical_q():
-            We want to keep non-zero component when i < j.
-
-        qubo_to_qaoa_circuit(gammas: List[float], betas: List[float], alphas: Optional[List[float]], mixer_function: Optional[qibo.models.Circuit]): -> qibo.models.Circuit
-            Constructs a QAOA circuit for the given QUBO problem.
-
-        train_QAOA(p: int, nshots: int, regular_QAOA: bool = True, regular_loss: bool = True, maxiter: int, method: str, cvar_delta: float, mixer_function: Optional[qibo.models.Circuit]): -> result.frequencies(binary=True)
-    """
 
     def __init__(self, offset, *args):
         """Initializes the QUBO class
@@ -89,18 +37,18 @@ class QUBO:
                         {(u, v): bias, ...}, where keys are 2-tuples of variables of the model
                         and values are optimisation_class biases associated with the pair of
                         variables (the interaction).
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> qp.Qdict
-        {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+        Example:
+            .. testcode::
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                print(qp.Qdict)
+                # >>> {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
 
-        >>> h = {3: 1.0, 4: 0.82, 5: 0.23}
-        >>> J = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, h, J)
-        >>> qp.Qdict
-        ({3: 1.0, 4: 0.82, 5: 0.23}, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
+                h = {3: 1.0, 4: 0.82, 5: 0.23}
+                J = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, h, J)
+                print(qp.Qdict)
+                # >>> ({3: 1.0, 4: 0.82, 5: 0.23}, {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0})
         """
 
         self.offset = offset
@@ -134,10 +82,10 @@ class QUBO:
 
     def _phase_separation(self, circuit, gamma):
         """
-        Apply the phase separation layer (corresponding to the Ising model Hamiltonian).
+        Applies the phase separation layer (corresponding to the Ising model Hamiltonian).
         This step encodes the interaction terms into the quantum circuit.
         """
-        # Apply R_z for diagonal terms (h_i)
+        # Apply R_z gates for diagonal terms (h_i)
         for i in range(self.n):
             circuit.add(gates.RZ(i, -2 * gamma * self.h[i]))  # -2 * gamma * h_i
 
@@ -155,7 +103,7 @@ class QUBO:
 
     def _default_mixer(self, circuit, beta, alpha=None):
         """
-        Apply the mixer layer (uniform superposition evolution).
+        Applies the mixer layer (uniform superposition evolution).
         This step applies RX rotations on each qubit to spread the superposition.
         """
         for i in range(self.n):
@@ -165,8 +113,8 @@ class QUBO:
 
     def _build(self, gammas, betas, alphas=None, custom_mixer=None):
         """
-        Construct the full QAOA circuit for the Ising model with p layers.
-        custom_mixer (List[qibo.models.Circuit]): An optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
+        Constructs the full QAOA circuit for the Ising model with p layers.
+        custom_mixer (List[:class:`qibo.models.Circuit`]): An optional function that takes as input custom mixers.
             If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
             If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
             If len(custom_mixer) != 1 and != len(gammas), raise an error.
@@ -232,13 +180,14 @@ class QUBO:
         Args:
             scalar_multiplier (float): The scalar value by which to multiply the coefficients.
 
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> qp.multiply_scalar(2)
-        >>> qp.Qdict
-        {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                qp.multiply_scalar(2)
+                print(qp.Qdict)
+                # >>> {(0, 0): 2.0, (0, 1): 1.0, (1, 1): -2.0}
         """
         for key in self.Qdict:
             self.Qdict[key] *= scalar_multiplier
@@ -262,7 +211,7 @@ class QUBO:
     def qubo_to_ising(self, constant=0.0):
         """Convert a QUBO problem to an Ising problem.
 
-        Map a optimisation_class unconstrained binary optimisation (QUBO) problem defined over
+        Maps a optimisation_class unconstrained binary optimisation (QUBO) problem defined over
         binary variables (0 or 1 values), where the linear term is contained along x' Qx
         the diagonal of Q, to an Ising model defined on spins (variables with {-1, +1} values).
         Returns `h` and `J` that define the Ising model as well as `constant` representing the
@@ -344,13 +293,14 @@ class QUBO:
         Returns:
             f_value (float): The evaluated function value.
 
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> x = [1, 1]
-        >>> qp.evaluate_f(x)
-        0.5
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                x = [1, 1]
+                print(qp.evaluate_f(x))
+                # >>> 0.5
         """
         f_value = self.offset
         for i in range(self.n):
@@ -369,18 +319,19 @@ class QUBO:
         """Evaluates the gradient of the quadratic function at a given binary vector.
 
         Args:
-            x (list): A list representing the binary vector for which to evaluate the gradient.
+            x (List[int]): A list representing the binary vector for which to evaluate the gradient.
 
         Returns:
-            grad (list): List of float representing the gradient vector.
+            grad (List): List of float representing the gradient vector.
 
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> x = [1, 1]
-        >>> qp.evaluate_grad_f(x)
-        [1.5, -0.5]
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                x = [1, 1]
+                print(qp.evaluate_grad_f(x))
+                # >>> [1.5, -0.5]
         """
         grad = np.asarray([self.Qdict.get((i, i), 0) for i in range(self.n)])
         for i in range(self.n):
@@ -401,15 +352,16 @@ class QUBO:
             best_solution (list): List of ints representing the best binary vector found.
             best_obj_value (float): The corresponding objective value.
 
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> best_solution, best_obj_value = qp.tabu_search(50, 5)
-        >>> best_solution
-        [0, 1]
-        >>> best_obj_value
-        0.5
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                best_solution, best_obj_value = qp.tabu_search(50, 5)
+                print(best_solution)
+                # >>> [0, 1]
+                print(best_obj_value)
+                # >>> 0.5
         """
         x = np.random.randint(2, size=self.n)  # Initial solution
         best_solution = x.copy()
@@ -451,15 +403,16 @@ class QUBO:
             opt_vector (list): List of ints representing the optimal binary vector.
             min_value (float): The minimum value of the objective function.
 
-        Example
-        -------
-        >>> Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
-        >>> qp = QUBO(0, Qdict)
-        >>> opt_vector, min_value = qp.brute_force()
-        >>> opt_vector
-        [1, 0]
-        >>> min_value
-        -0.5
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                opt_vector, min_value = qp.brute_force()
+                print(opt_vector)
+                # >>> [1, 0]
+                print(min_value)
+                # >>> -0.5
         """
         possible_values = {}
         # A list of all the possible permutations for x vector
@@ -484,7 +437,7 @@ class QUBO:
         return opt_vector, min_value
 
     def canonical_q(self):
-        """We want to keep non-zero component when i < j.
+        """Converts the QUBO matrix to canonical form where only terms with i < j are retained.
 
         Returns:
             self.Qdict (dict): A dictionary and also update Qdict
@@ -500,22 +453,19 @@ class QUBO:
 
     def qubo_to_qaoa_circuit(self, gammas, betas, alphas=None, custom_mixer=None):
         """
-        Constructs a QAOA circuit for the given QUBO problem.
+        Constructs a QAOA or XQAOA circuit for the given QUBO problem.
 
-        Parameters
-        ----------
-        gammas: parameters for phasers
-        betas: parameters for X mixers
-        alphas: parameters for Y mixers
-        custom_mixer (List[qibo.models.Circuit]): optional function that takes as input custom mixers. Only two scenarios for now, to be improved in future.
-            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
-            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
-            If len(custom_mixer) != 1 and != len(gammas), raise an error.
+        Args:
+            gammas (List[float]): parameters for phasers
+            betas (List[float]): parameters for X mixers
+            alphas (List[float], optional): parameters for Y mixers for XQAOA
+            custom_mixer (List[:class:`qibo.models.Circuit`]): optional argument that takes as input custom mixers.
+                If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+                If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+                If len(custom_mixer) != 1 and != len(gammas), raise an error.
 
-        Returns
-        -------
-        circuit : qibo.models.Circuit
-            The QAOA circuit corresponding to the QUBO problem.
+        Returns:
+            circuit (:class:`qibo.models.Circuit`): The QAOA or XQAOA circuit corresponding to the QUBO problem.
         """
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             return self._build(gammas, betas, alphas)
@@ -543,26 +493,45 @@ class QUBO:
         noise_model=None,
     ):
         """
+        Constructs the QAOA or XQAOA circuit with optional parameters for the mixers or phases before using a classical optimizer to search for the
+        optimal parameters which minimise the cost function (either expected value or Conditional Variance at Risk (CVaR).
 
-        Parameters
-        ----------
-        p: number of layers
-        nshots: number of shots
-        regular_QAOA: if True, it is the vanilla QAOA, otherwise, we use XQAOA
-        regular_loss: if true, we minimize the expected value, otherwise, we minimize cvar
-        maxiter: maximum iterations
-        method: classical optimizer
-        cvar_delta: if CVaR is used, this is the threshold
-        custom_mixer: function defining a custom mixer (optional)
-        backend: include backend argument
+        Args:
+            gammas (List[float], optional): parameters for phasers.
+            betas  (List[float], optional): parameters for X mixers.
+            alphas (List[float], optional): parameters for Y mixers for XQAOA. Defaults to None.
+            p (int, optional): number of layers.
+            nshots (int, optional): number of shots
+            regular_loss (Bool, optional): If False, Conditional Variance at Risk (CVaR) is used as cost function.
+                Defaults to True, where expected value is used as cost function.
+            maxiter (int, optional): Maximum number of iterations used in the minimiser. Defaults to 10.
+            cvar_delta (float, optional): Represents the quantile threshold used for calculating the CVaR. Defaults to 0.25.
+            custom_mixer (List[:class:`qibo.models.Circuit`]): optional argument that takes as input custom mixers.
+                If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+                If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+                If len(custom_mixer) != 1 and != len(gammas), raise an error.
+            backend (:class:`qibo.backends.abstract.Backend`, optional): backend to be used in the execution.
+                If ``None``, it uses the current backend. Defaults to ``None``.
+            noise_model (:class:`qibo.noise.NoiseModel`, optional): noise model applied to simulate noisy computations.
+                Defaults to None.
 
-        Parameter packing convention:
-            - Block format: [all gammas][all betas][all alphas] (if alphas is not None)
-            - Otherwise: [all gammas][all betas]
-        Returns
-        -------
-        best, params, extra, circuit, frequencies
+        Returns:
+            Tuple[float, List[float], dict, :class:`qibo.models.Circuit`, dict]: A tuple containing:
+                - best (float): The lowest cost value achieved.
+                - params (List[float]): Optimized QAOA parameters.
+                - extra (dict): Additional metadata (e.g., convergence info).
+                - circuit (:class:`qibo.models.Circuit`): Final circuit used for evaluation.
+                - frequencies (dict): Bitstring outcome frequencies from measurement.
 
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                opt_vector, min_value = qp.brute_force()
+
+                # Train regular QAOA
+                output = QUBO(0, Qdict).train_QAOA(p=10)
         """
 
         backend = _check_backend(backend)
@@ -605,6 +574,16 @@ class QUBO:
         if regular_loss:
 
             def myloss(parameters):
+                """
+                Computes the expectation value as loss.
+
+                Args:
+                    parameters (List[float]): Parameters used in the circuit.
+
+                Returns:
+                    loss (float): The computed expectation value.
+                """
+
                 p = len(gammas)
                 if alphas is not None:
                     gammas_ = parameters[:p]
@@ -619,11 +598,8 @@ class QUBO:
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
-                print("Regular loss" "s circuit:\n")
-                print(circuit)
-                # print(">> Optimisation step:\n")
-                # for data in circuit.raw["queue"]:
-                #     print(data)
+                # print("Regular loss" "s circuit:\n")
+                # print(circuit)
 
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
@@ -638,14 +614,14 @@ class QUBO:
 
             def myloss(parameters, delta=cvar_delta):
                 """
-                Compute the CVaR of the energy distribution for a given quantile threshold `delta`.
+                Computes the CVaR of the energy distribution for a given quantile threshold `delta`.
 
-                Parameters:
-                - parameters: The parameters to set in the circuit.
-                - delta: The quantile threshold (default is 0.1 for 10%).
+                Args:
+                    parameters (List[float]): Parameters used in the circuit.
+                    delta (float): Quantile threshold for CVaR (defaults to 0.25)
 
                 Returns:
-                - CVaR: The computed CVaR value.
+                    cvar (float): The computed CVaR value.
                 """
                 m = len(parameters)
                 if alphas is not None:
@@ -661,11 +637,11 @@ class QUBO:
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
-                print("CVaR loss" "s circuit:\n")
-                print(circuit)
-                print(">> Optimisation step:\n")
-                for data in circuit.raw["queue"]:
-                    print(data)
+                # print("CVaR loss" "s circuit:\n")
+                # print(circuit)
+                # print(">> Optimisation step:\n")
+                # for data in circuit.raw["queue"]:
+                #     print(data)
 
                 result = backend.execute_circuit(circuit, nshots=nshots)
                 result_counter = result.frequencies(binary=True)
@@ -710,7 +686,7 @@ class QUBO:
         best, params, extra = optimize(
             myloss, parameters, method=method, options={"maxiter": maxiter}
         )
-        # Unpack optimized parameters in the same way as in myloss (block format)
+        # Unpack optimised parameters in the same way as in myloss (block format)
         if alphas is not None:
             optimised_gammas = params[:p]
             optimised_betas = params[p : 2 * p]
@@ -736,19 +712,15 @@ class QUBO:
 
     def qubo_to_qaoa_object(self, params: list = None):
         """
-        Generates a QAOA circuit for the QUBO problem.
+        Generates a QAOA object for the QUBO problem.
 
-        Parameters
-        ----------
-        params : list, optional
-            parameters for QAOA, packed in block format:
-                [all gammas][all betas][all alphas] (if alphas is not None)
-                otherwise [all gammas][all betas]
-        Returns
-        -------
-        circuit : qibo.models.QAOA
-            A QAOA circuit for the QUBO problem.
+        Args:
+            params (List[float]): Parameters of the QAOA given in block format:
+                e.g. [all_gammas, all_betas, all_alphas] (if alphas is not None)
+        Returns:
+            qaoa (`qibo.models.QAOA`): A QAOA circuit for the QUBO problem.
         """
+
         # Convert QUBO to Ising Hamiltonian
         h, J, constant = self.qubo_to_ising()
 
@@ -798,11 +770,12 @@ class linear_problem:
         # TODO: Raises: ValueError
             If A and b have incompatible dimensions.
 
-        Examples
-        --------
-        >>> A = np.array([[1, 2], [3, 4]])
-        >>> b = np.array([5, 6])
-        >>> lp = linear_problem(A, b)
+        Example:
+            .. testcode::
+
+                A = np.array([[1, 2], [3, 4]])
+                b = np.array([5, 6])
+                lp = linear_problem(A, b)
         """
         self.A = np.atleast_2d(A)
         self.b = np.array([b]) if np.isscalar(b) else np.asarray(b)
@@ -814,17 +787,18 @@ class linear_problem:
         Args:
             scalar (float): The scalar value to multiply the matrix A and vector b.
 
-        Examples
-        --------
-        >>> A = np.array([[1, 2], [3, 4]])
-        >>> b = np.array([5, 6])
-        >>> lp = linear_problem(A, b)
-        >>> lp.multiply_scalar(2)
-        >>> print(lp.A)
-        [[2 4]
-         [6 8]]
-        >>> print(lp.b)
-        [10 12]
+        Example:
+            .. testcode::
+
+                A = np.array([[1, 2], [3, 4]])
+                b = np.array([5, 6])
+                lp = linear_problem(A, b)
+                lp.multiply_scalar(2)
+                print(lp.A)
+                # >>> [[2 4]
+                       [6 8]]
+                print(lp.b)
+                # >>> [10 12]
         """
         self.A *= scalar_multiplier
         self.b *= scalar_multiplier
@@ -838,20 +812,21 @@ class linear_problem:
         # TODO: Raises: ValueError
             If the dimensions of the two linear problems do not match.
 
-        Examples
-        --------
-        >>> A1 = np.array([[1, 2], [3, 4]])
-        >>> b1 = np.array([5, 6])
-        >>> lp1 = linear_problem(A1, b1)
-        >>> A2 = np.array([[1, 1], [1, 1]])
-        >>> b2 = np.array([1, 1])
-        >>> lp2 = linear_problem(A2, b2)
-        >>> lp1 + lp2
-        >>> print(lp1.A)
-        [[2 3]
-         [4 5]]
-        >>> print(lp1.b)
-        [6 7]
+        Example:
+            .. testcode::
+
+                A1 = np.array([[1, 2], [3, 4]])
+                b1 = np.array([5, 6])
+                lp1 = linear_problem(A1, b1)
+                A2 = np.array([[1, 1], [1, 1]])
+                b2 = np.array([1, 1])
+                lp2 = linear_problem(A2, b2)
+                lp1 + lp2
+                print(lp1.A)
+                # >>> [[2 3]
+                       [4 5]]
+                print(lp1.b)
+                # >>> [6 7]
         """
         self.A += other_linear.A
         self.b += other_linear.b
@@ -865,15 +840,16 @@ class linear_problem:
         Returns:
             numpy.ndarray: The value of the linear function Ax + b at the given x.
 
-        Examples
-        --------
-        >>> A = np.array([[1, 2], [3, 4]])
-        >>> b = np.array([5, 6])
-        >>> lp = linear_problem(A, b)
-        >>> x = np.array([1, 1])
-        >>> result = lp.evaluate_f(x)
-        >>> print(result)
-        [ 8 13]
+        Example:
+            .. testcode::
+
+                A = np.array([[1, 2], [3, 4]])
+                b = np.array([5, 6])
+                lp = linear_problem(A, b)
+                x = np.array([1, 1])
+                result = lp.evaluate_f(x)
+                print(result)
+                # [ 8 13]
         """
         return self.A @ x + self.b
 
@@ -883,16 +859,17 @@ class linear_problem:
         Returns:
             `class:QUBO`: A quadratic problem corresponding to squaring the linear function.
 
-        Examples
-        --------
-        >>> A = np.array([[1, 2], [3, 4]])
-        >>> b = np.array([5, 6])
-        >>> lp = linear_problem(A, b)
-        >>> Quadratic = lp.square()
-        >>> print(Quadratic.Qdict)
-        {(0, 0): 56, (0, 1): 14, (1, 0): 14, (1, 1): 88}
-        >>> print(Quadratic.offset)
-        61
+        Example:
+            .. testcode::
+
+                A = np.array([[1, 2], [3, 4]])
+                b = np.array([5, 6])
+                lp = linear_problem(A, b)
+                Quadratic = lp.square()
+                print(Quadratic.Qdict)
+                # >>> {(0, 0): 56, (0, 1): 14, (1, 0): 14, (1, 1): 88}
+                print(Quadratic.offset)
+                # >>> 61
         """
         quadraticpart = self.A.T @ self.A + np.diag(2 * (self.b @ self.A))
         offset = np.dot(self.b, self.b)

@@ -3,17 +3,17 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="What is qibo-comb-optimisation?" href="index.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="Optimisation class" href="optimisation_class.html" />
 
     <link rel="shortcut icon" href="_static/favicon.ico"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>API Reference - Qibo-comb-optimisation · v0.1.0</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+        <title>Combinatorial classes - Qibo-comb-optimisation · v0.1.0</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/css/style.css?v=0809a0bf" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
-    
-    
+
+
 
 
 <style>
@@ -23,29 +23,29 @@
   --color-brand-primary: #6400FF;
   --color-brand-secondary: #6400FF;
   --color-brand-content: #6400FF;
-  
+
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
       }
     }
   }
 </style></head>
   <body>
-    
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-    
+
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -191,16 +191,16 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-      
+
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
-  
+
   <div class="sidebar-logo-container">
     <img class="sidebar-logo only-light" src="_static/qibo_logo_dark.svg" alt="Light Logo"/>
     <img class="sidebar-logo only-dark" src="_static/qibo_logo_light.svg" alt="Dark Logo"/>
   </div>
-  
+
   <span class="sidebar-brand-text">Qibo-comb-optimisation · v0.1.0</span>
-  
+
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -209,7 +209,8 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimisation_class.html">Optimisation class</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Combinatorial classes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Documentation links</span></p>
 <ul>
@@ -227,7 +228,7 @@
 </div>
 
       </div>
-      
+
     </div>
   </aside>
   <div class="main">
@@ -265,34 +266,209 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="api-reference">
-<span id="combinatorial-classes"></span><h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading">¶</a></h1>
-<p>Listed here are some of the Quadratic Unconstrained Binary Optimisation (QUBO) problems.</p>
+          <section id="combinatorial-classes">
+<span id="id1"></span><h1>Combinatorial classes<a class="headerlink" href="#combinatorial-classes" title="Link to this heading">¶</a></h1>
+<p>Listed here are two Quadratic Unconstrained Binary Optimisation (QUBO) problems, the <a class="reference internal" href="#tsp"><span class="std std-ref">Travelling Salesman Problem</span></a> and the <a class="reference internal" href="#mis"><span class="std std-ref">Maximum Independent Set</span></a>.</p>
 <section id="travelling-salesman-problem">
-<h2>Travelling Salesman Problem<a class="headerlink" href="#travelling-salesman-problem" title="Link to this heading">¶</a></h2>
-<p>The TSP is …</p>
+<span id="tsp"></span><h2>Travelling Salesman Problem<a class="headerlink" href="#travelling-salesman-problem" title="Link to this heading">¶</a></h2>
+<p>The Travelling Salesman Problem (sometimes referred to as the Travelling Salesperson Problem), commonly abbreviated as TSP, is a NP-hard problem in combinatorial optimisation.</p>
+<p>Briefly, the problem revolves around finding the shortest possible route for a salesman to visit some cities before returning to the origin. TSP is usually formulated as a graph problem with nodes specifying the cities and edges denoting the distances between each city.</p>
+<p>The idea behind TSP can be mapped to similar-type problems. For instance, what is the optimal route for the salesman to take in order to minimise something.</p>
+<p>In this module, the TSP class follows Hadfield’s 2017 paper <cite>arxiv:1709.03489 &lt;https://arxiv.org/abs/1709.03489&gt;</cite>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.</span></span><span class="sig-name descname"><span class="pre">TSP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">distance_matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#TSP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP" title="Link to this definition">¶</a></dt>
+<dd><p>Class representing the Travelling Salesman Problem (TSP). The implementation is based on
+<cite>arxiv:1709.03489 &lt;https://arxiv.org/abs/1709.03489&gt;</cite> by Hadfield (2017).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>distance_matrix</strong> – a numpy matrix encoding the distance matrix.</p></li>
+<li><p><strong>backend</strong> – Backend to use for calculations. If not given the global backend will be used.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">qibo.models.tsp</span><span class="w"> </span><span class="kn">import</span> <span class="n">TSP</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qibo</span><span class="w"> </span><span class="kn">import</span> <span class="n">gates</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qibo.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QAOA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qibo.result</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitResult</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_to_standard_Cauchy</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">)))</span>
+    <span class="n">cauchy</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">m</span>  <span class="c1"># Cauchy&#39;s notation for permutation, e.g. (1,2,0) or (2,0,1)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">config</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+                <span class="n">cauchy</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>  <span class="c1"># citi i is in slot j</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">cauchy</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">cauchy</span> <span class="o">=</span> <span class="n">cauchy</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span> <span class="o">+</span> <span class="n">cauchy</span><span class="p">[:</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">cauchy</span><span class="p">)</span>
+            <span class="c1"># now, the cauchy notation for permutation begins with 0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">evaluate_dist</span><span class="p">(</span><span class="n">cauchy</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Given a permutation of 0 to n-1, we compute the distance of the tour</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cauchy</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">[</span><span class="n">cauchy</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">cauchy</span><span class="p">[(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">%</span><span class="n">m</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">qaoa_function_of_layer</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">distance_matrix</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    This is a function to study the impact of the number of layers on QAOA,</span>
+<span class="sd">    it takes in the number of layers and compute the distance of the mode</span>
+<span class="sd">    of the histogram obtained from QAOA</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">small_tsp</span> <span class="o">=</span> <span class="n">TSP</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">)</span>
+    <span class="n">obj_hamil</span><span class="p">,</span> <span class="n">mixer</span> <span class="o">=</span> <span class="n">small_tsp</span><span class="o">.</span><span class="n">hamiltonians</span><span class="p">()</span>
+    <span class="n">qaoa</span> <span class="o">=</span> <span class="n">QAOA</span><span class="p">(</span><span class="n">obj_hamil</span><span class="p">,</span> <span class="n">mixer</span><span class="o">=</span><span class="n">mixer</span><span class="p">)</span>
+    <span class="n">best_energy</span><span class="p">,</span> <span class="n">final_parameters</span><span class="p">,</span> <span class="n">extra</span> <span class="o">=</span> <span class="n">qaoa</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">initial_p</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">]</span> <span class="o">*</span> <span class="n">layer</span><span class="p">,</span>
+                                         <span class="n">initial_state</span><span class="o">=</span><span class="n">initial_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;BFGS&#39;</span><span class="p">)</span>
+    <span class="n">qaoa</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">(</span><span class="n">final_parameters</span><span class="p">)</span>
+    <span class="n">quantum_state</span> <span class="o">=</span> <span class="n">qaoa</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+    <span class="n">circuit</span> <span class="o">=</span> <span class="n">Circuit</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+    <span class="n">circuit</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">gates</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="o">*</span><span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">)))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">CircuitResult</span><span class="p">(</span><span class="n">quantum_state</span><span class="p">,</span> <span class="n">circuit</span><span class="o">.</span><span class="n">measurements</span><span class="p">,</span>
+            <span class="n">small_tsp</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span> <span class="n">nshots</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+    <span class="n">freq_counter</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">frequencies</span><span class="p">()</span>
+    <span class="c1"># let&#39;s combine freq_counter here, first convert each key and sum up the frequency</span>
+    <span class="n">cauchy_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">freq_key</span> <span class="ow">in</span> <span class="n">freq_counter</span><span class="p">:</span>
+        <span class="n">standard_cauchy_key</span> <span class="o">=</span> <span class="n">convert_to_standard_Cauchy</span><span class="p">(</span><span class="n">freq_key</span><span class="p">)</span>
+        <span class="n">cauchy_dict</span><span class="p">[</span><span class="n">standard_cauchy_key</span><span class="p">]</span> <span class="o">+=</span> <span class="n">freq_counter</span><span class="p">[</span><span class="n">freq_key</span><span class="p">]</span>
+    <span class="n">max_key</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">cauchy_dict</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">cauchy_dict</span><span class="o">.</span><span class="n">get</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">evaluate_dist</span><span class="p">(</span><span class="n">max_key</span><span class="p">)</span>
+
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">num_cities</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="n">distance_matrix</span> <span class="o">=</span> <span class="n">distance_matrix</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">small_tsp</span> <span class="o">=</span> <span class="n">TSP</span><span class="p">(</span><span class="n">distance_matrix</span><span class="p">)</span>
+<span class="n">initial_parameters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">initial_state</span> <span class="o">=</span> <span class="n">small_tsp</span><span class="o">.</span><span class="n">prepare_initial_state</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_cities</span><span class="p">)])</span>
+<span class="n">qaoa_function_of_layer</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">distance_matrix</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.hamiltonians">
+<span class="sig-name descname"><span class="pre">hamiltonians</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#TSP.hamiltonians"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.hamiltonians" title="Link to this definition">¶</a></dt>
+<dd><p>Constructs the phaser and mixer Hamiltonians for the TSP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A tuple containing the phaser and mixer Hamiltonians.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)">tuple</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.prepare_initial_state">
+<span class="sig-name descname"><span class="pre">prepare_initial_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ordering</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#TSP.prepare_initial_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.prepare_initial_state" title="Link to this definition">¶</a></dt>
+<dd><p>Prepares a valid initial state for TSP QAOA based on the given city ordering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ordering</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – A list representing the permutation of cities.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The quantum state representing the initial solution.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.penalty_method">
+<span class="sig-name descname"><span class="pre">penalty_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">penalty</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#TSP.penalty_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.penalty_method" title="Link to this definition">¶</a></dt>
+<dd><p>Constructs the TSP QUBO object using a penalty method for feasibility.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>penalty</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The penalty parameter for constraint violations.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A QUBO object for the TSP with penalties applied.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="optimisation_class.html#qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO" title="qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO">QUBO</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="maximum-independent-set">
-<h2>Maximum Independent Set<a class="headerlink" href="#maximum-independent-set" title="Link to this heading">¶</a></h2>
-<p>Some text about Max Indep Set</p>
+<span id="mis"></span><h2>Maximum Independent Set<a class="headerlink" href="#maximum-independent-set" title="Link to this heading">¶</a></h2>
+<p>The MIS problem involves selecting the largest subset of non-adjacent vertices in a graph.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.</span></span><span class="sig-name descname"><span class="pre">Mis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#Mis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis" title="Link to this definition">¶</a></dt>
+<dd><p>Class for representing the Maximal Independent Set (MIS) problem.</p>
+<p>The MIS problem involves selecting the largest subset of non-adjacent vertices in a graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>g</strong> (<em>networkx.Graph</em>) – A graph object representing the problem.</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qibo.models.combinatorial_classes</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mis</span>
+
+<span class="n">g</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)])</span>
+<span class="n">mis</span> <span class="o">=</span> <span class="n">Mis</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+<span class="n">penalty</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">qp</span> <span class="o">=</span> <span class="n">mis</span><span class="o">.</span><span class="n">penalty_method</span><span class="p">(</span><span class="n">penalty</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis.penalty_method">
+<span class="sig-name descname"><span class="pre">penalty_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">penalty</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/qibo_comb_optimisation/combinatorial_classes/combinatorial_classes.html#Mis.penalty_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis.penalty_method" title="Link to this definition">¶</a></dt>
+<dd><p>Constructs the QUBO Hamiltonian for the MIS problem using a penalty method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>penalty</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><em>float</em></a>) – The penalty parameter for constraint violations.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A QUBO object for the MIS problem.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="optimisation_class.html#qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO" title="qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO">QUBO</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 
         </article>
       </div>
       <footer>
-        
+
         <div class="related-pages">
-          
-          <a class="prev-page" href="index.html">
+
+          <a class="prev-page" href="optimisation_class.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
-                
-                <div class="title">Home</div>
-                
+
+                <div class="title">Optimisation class</div>
+
               </div>
             </a>
         </div>
@@ -302,9 +478,9 @@
                 Copyright &#169; The Qibo team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
+
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
+
           </div>
           <div class="right-details">
             <div class="icons">
@@ -313,16 +489,16 @@
                         <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
                 </a>
-              
+
             </div>
           </div>
         </div>
-        
+
       </footer>
     </div>
     <aside class="toc-drawer">
-      
-      
+
+
       <div class="toc-sticky toc-scroll">
         <div class="toc-title-container">
           <span class="toc-title">
@@ -332,9 +508,23 @@
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">API Reference</a><ul>
-<li><a class="reference internal" href="#travelling-salesman-problem">Travelling Salesman Problem</a></li>
-<li><a class="reference internal" href="#maximum-independent-set">Maximum Independent Set</a></li>
+<li><a class="reference internal" href="#">Combinatorial classes</a><ul>
+<li><a class="reference internal" href="#travelling-salesman-problem">Travelling Salesman Problem</a><ul>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP"><code class="docutils literal notranslate"><span class="pre">TSP</span></code></a><ul>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.hamiltonians"><code class="docutils literal notranslate"><span class="pre">TSP.hamiltonians()</span></code></a></li>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.prepare_initial_state"><code class="docutils literal notranslate"><span class="pre">TSP.prepare_initial_state()</span></code></a></li>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.TSP.penalty_method"><code class="docutils literal notranslate"><span class="pre">TSP.penalty_method()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#maximum-independent-set">Maximum Independent Set</a><ul>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis"><code class="docutils literal notranslate"><span class="pre">Mis</span></code></a><ul>
+<li><a class="reference internal" href="#qibo_comb_optimisation.combinatorial_classes.combinatorial_classes.Mis.penalty_method"><code class="docutils literal notranslate"><span class="pre">Mis.penalty_method()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -342,8 +532,8 @@
           </div>
         </div>
       </div>
-      
-      
+
+
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=01f34227"></script>

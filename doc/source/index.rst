@@ -2,17 +2,16 @@
       Qibo-comb-optimisation
 
 What is qibo-comb-optimisation?
-============================
+===============================
 
-Qibo-comb-optimisation is a Qibo plugin that has tools to solve combinatorial optimisation problems.
+qibo-comb-optimisation is a Qibo plugin that has tools to solve combinatorial optimisation problems.
 
 Installation instructions
 =========================
 
 Install first the package dependencies with the following commands.
 
-We recommend to start with a fresh virtual environment to avoid dependencies
-conflicts with previously installed packages.
+We recommend to start with a fresh virtual environment to avoid dependencies conflicts with previously installed packages.
 
 .. code-block:: bash
 
@@ -23,21 +22,20 @@ The qibo-comb-optimisation package can be installed through pip:
 
 .. code-block:: bash
 
-   pip install qibo-comb-optimisation
+   pip install qibo_comb_optimisation
 
 
 Quickstart
 ==========
 
-Once installed, the plugin allows for... 
+Once installed, the qibo-comb-optimisation allows the general user to solve QUBO problems with the built-in QUBO class.
+Along with the QUBO class, there are some combinatorial classes found in :class:`qibo_comb_optimisation.combinatorial_classes`.
 
 .. code-block:: python
 
-   from qibo.models import QFT
-   from qibo import gates
+   from qibo_comb_optimisation.optimisation_class.optimisation_class import QUBO
+   from qibo_comb_optimisation.combinatorial_classes.combinatorial_classes import TSP as TSP
 
-   circuit = qibo.models.QFT(5)
-   circuit.add(gates.M(0, 2, 5))
 
 
 API Reference
@@ -51,7 +49,7 @@ API Reference
    combinatorial_classes
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Documentation links
 
     Qibo docs <https://qibo.science/qibo/stable/>
