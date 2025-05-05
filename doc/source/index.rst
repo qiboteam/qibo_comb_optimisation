@@ -28,7 +28,8 @@ The qibo-comb-optimisation package can be installed through pip:
 Quickstart
 ==========
 
-Once installed, the plugin allows for...
+Once installed, the qibo-comb-optimisation allows the general user to solve QUBO problems with the built-in QUBO class.
+Along with the QUBO class, there are some combinatorial classes found in :class:`qibo_comb_optimisation.combinatorial_classes`.
 
 .. code-block:: python
 

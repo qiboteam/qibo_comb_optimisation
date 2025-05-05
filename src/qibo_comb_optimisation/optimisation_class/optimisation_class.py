@@ -522,6 +522,16 @@ class QUBO:
                 - extra (dict): Additional metadata (e.g., convergence info).
                 - circuit (:class:`qibo.models.Circuit`): Final circuit used for evaluation.
                 - frequencies (dict): Bitstring outcome frequencies from measurement.
+
+        Example:
+            .. testcode::
+
+                Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+                qp = QUBO(0, Qdict)
+                opt_vector, min_value = qp.brute_force()
+
+                # Train regular QAOA
+                output = QUBO(0, Qdict).train_QAOA(p=10)
         """
 
         backend = _check_backend(backend)
@@ -588,8 +598,8 @@ class QUBO:
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
-                print("Regular loss" "s circuit:\n")
-                print(circuit)
+                # print("Regular loss" "s circuit:\n")
+                # print(circuit)
 
                 result = circuit(None, nshots)
                 result_counter = result.frequencies(binary=True)
@@ -627,11 +637,11 @@ class QUBO:
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
-                print("CVaR loss" "s circuit:\n")
-                print(circuit)
-                print(">> Optimisation step:\n")
-                for data in circuit.raw["queue"]:
-                    print(data)
+                # print("CVaR loss" "s circuit:\n")
+                # print(circuit)
+                # print(">> Optimisation step:\n")
+                # for data in circuit.raw["queue"]:
+                #     print(data)
 
                 result = backend.execute_circuit(circuit, nshots=nshots)
                 result_counter = result.frequencies(binary=True)
