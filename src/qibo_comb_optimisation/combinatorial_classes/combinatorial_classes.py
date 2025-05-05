@@ -116,7 +116,7 @@ def _tsp_mixer(num_cities, backend=None):
 class TSP:
     """
     Class representing the Travelling Salesman Problem (TSP). The implementation is based on
-    `arxiv:1709.03489 <https://arxiv.org/abs/1709.03489>` by Hadfield (2017).
+    [arxiv:1709.03489](https://arxiv.org/abs/1709.03489) by Hadfield (2017).
 
     Args:
         distance_matrix: a numpy matrix encoding the distance matrix.
@@ -287,7 +287,7 @@ class Mis:
         .. testcode::
 
             import networkx as nx
-            from qibo.models.combinatorial_classes import Mis
+            from qibo_comb_optimisation.combinatorial_classes.combinatorial_classes import Mis
 
             g = nx.Graph()
             g.add_edges_from([(0, 1), (1, 2), (2, 0)])
@@ -299,9 +299,10 @@ class Mis:
     def __init__(self, g):
         """
 
-        :param self:
-        :param g:  A networkx object
-        :return: a QUBO representation
+        Args:
+            g: A networkx object
+        Returns:
+            :class:`qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO` representation
         """
         self.g = g
         self.n = g.number_of_nodes()
@@ -314,7 +315,7 @@ class Mis:
             penalty (float): The penalty parameter for constraint violations.
 
         Returns:
-            QUBO: A QUBO object for the MIS problem.
+            QUBO (:class:`qibo_comb_optimisation.optimisation_class.optimisation_class.QUBO`): A QUBO object for the Maximal Independent Set (MIS) problem.
         """
         q_dict = {}
         for i in range(self.n):
