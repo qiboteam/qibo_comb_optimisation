@@ -1,6 +1,6 @@
 # Qibo comb optimisation
 
-For the complete documentation on qibo-comb-optimisation, please refer to [qibo-comb-optimisation](https://qibo.science/qibo-comb-optimisation/stable/)
+For the complete documentation on qibo-comb-optimisation, please refer to [qibo-comb-optimisation](https://qibo.science/qibo-comb-optimisation/stable/).
 
 ## Installation instructions
 
