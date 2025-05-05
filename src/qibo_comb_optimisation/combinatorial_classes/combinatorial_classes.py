@@ -10,8 +10,8 @@ from qibo.models.circuit import Circuit
 from qibo.symbols import X, Y, Z
 
 from qibo_comb_optimisation.optimisation_class.optimisation_class import (
-    linear_problem,
     QUBO,
+    linear_problem,
 )
 
 
@@ -115,20 +115,12 @@ def _tsp_mixer(num_cities, backend=None):
 
 class TSP:
     """
-    The travelling salesman problem (also called the travelling salesperson problem or TSP)
-    asks the following question: "Given a list of cities and the distances between each pair
-    of cities,what is the shortest possible route for a salesman to visit each city exactly
-    once and return to the origin city?"
-    It is an NP-hard problem in combinatorial optimisation.
-    It is also important in theoretical computer science and
-    operations research.
-
-    This is a TSP class that enables us to implement TSP according to
-    `arxiv:1709.03489 <https://arxiv.org/abs/1709.03489>`_ by Hadfield (2017).
+    Class representing the Travelling Salesman Problem (TSP). The implementation is based on
+    `arxiv:1709.03489 <https://arxiv.org/abs/1709.03489>` by Hadfield (2017).
 
     Args:
-            distance_matrix: a numpy matrix encoding the distance matrix.
-            backend: Backend to use for calculations. If not given the global backend will be used.
+        distance_matrix: a numpy matrix encoding the distance matrix.
+        backend: Backend to use for calculations. If not given the global backend will be used.
 
     Example:
         .. testcode::
@@ -333,4 +325,3 @@ class Mis:
 
     def __str__(self):
         return self.__class__.__name__
-
