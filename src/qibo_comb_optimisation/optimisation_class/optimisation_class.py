@@ -174,7 +174,7 @@ class QUBO:
         p = len(gammas)
 
         # Apply initial Hadamard gates (uniform superposition)
-        circuit = Circuit(self.n)
+        circuit = Circuit(self.n, density_matrix=True)
         for i in range(self.n):
             circuit.add(gates.H(i))
 
@@ -192,9 +192,17 @@ class QUBO:
                     # Extract number of betas per layer
                     betas_per_layer = len(betas) // p
                     if len(custom_mixer) == 1:
-                        circuit += custom_mixer[0](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
+                        circuit += custom_mixer[0](
+                            betas[
+                                layer * betas_per_layer : (layer + 1) * betas_per_layer
+                            ]
+                        )
                     elif len(custom_mixer) == len(gammas):
-                        circuit += custom_mixer[layer](betas[layer*betas_per_layer:(layer+1)*betas_per_layer])
+                        circuit += custom_mixer[layer](
+                            betas[
+                                layer * betas_per_layer : (layer + 1) * betas_per_layer
+                            ]
+                        )
 
                     # print("<<< OLD <<<")
                     # for data in custom_mixer[layer].raw['queue']:
@@ -532,6 +540,7 @@ class QUBO:
         cvar_delta=0.25,
         custom_mixer=None,
         backend=None,
+        noise_model=None,
     ):
         """
 
@@ -583,7 +592,9 @@ class QUBO:
         circuit = self.qubo_to_qaoa_circuit(
             gammas, betas, alphas=alphas, custom_mixer=custom_mixer
         )
-    
+        if noise_model is not None:
+            circuit = noise_model.apply(circuit)
+
         n_params = 3 * p if alphas else 2 * p
 
         # Block packing: [all gammas][all betas][all alphas]
@@ -591,22 +602,25 @@ class QUBO:
         if alphas is not None:
             parameters += list(alphas)
 
-
         if regular_loss:
 
             def myloss(parameters):
                 p = len(gammas)
                 if alphas is not None:
                     gammas_ = parameters[:p]
-                    betas_ = parameters[p:2*p]
-                    unpacked_alphas = parameters[2*p:3*p]
+                    betas_ = parameters[p : 2 * p]
+                    unpacked_alphas = parameters[2 * p : 3 * p]
                 else:
                     gammas_ = parameters[:p]
-                    betas_ = parameters[p:2*p]
+                    betas_ = parameters[p : 2 * p]
                     unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas_, betas_, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
+                if noise_model is not None:
+                    circuit = noise_model.apply(circuit)
+                print("Regular loss" "s circuit:\n")
+                print(circuit)
                 # print(">> Optimisation step:\n")
                 # for data in circuit.raw["queue"]:
                 #     print(data)
@@ -636,15 +650,19 @@ class QUBO:
                 m = len(parameters)
                 if alphas is not None:
                     gammas_ = parameters[:p]
-                    betas_ = parameters[p:2*p]
-                    unpacked_alphas = parameters[2*p:3*p]
+                    betas_ = parameters[p : 2 * p]
+                    unpacked_alphas = parameters[2 * p : 3 * p]
                 else:
                     gammas_ = parameters[:p]
-                    betas_ = parameters[p:2*p]
+                    betas_ = parameters[p : 2 * p]
                     unpacked_alphas = None
                 circuit = self.qubo_to_qaoa_circuit(
                     gammas_, betas_, alphas=unpacked_alphas, custom_mixer=custom_mixer
                 )
+                if noise_model is not None:
+                    circuit = noise_model.apply(circuit)
+                print("CVaR loss" "s circuit:\n")
+                print(circuit)
                 print(">> Optimisation step:\n")
                 for data in circuit.raw["queue"]:
                     print(data)
@@ -695,11 +713,11 @@ class QUBO:
         # Unpack optimized parameters in the same way as in myloss (block format)
         if alphas is not None:
             optimised_gammas = params[:p]
-            optimised_betas = params[p:2*p]
-            optimised_alphas = params[2*p:3*p]
+            optimised_betas = params[p : 2 * p]
+            optimised_alphas = params[2 * p : 3 * p]
         else:
             optimised_gammas = params[:p]
-            optimised_betas = params[p:2*p]
+            optimised_betas = params[p : 2 * p]
             optimised_alphas = None
         circuit = self.qubo_to_qaoa_circuit(
             gammas=optimised_gammas,
@@ -707,8 +725,13 @@ class QUBO:
             alphas=optimised_alphas,
             custom_mixer=custom_mixer,
         )
+        if noise_model is not None:
+            circuit = noise_model.apply(circuit)
+        print("Final circuit:\n")
+        print(circuit)
+
         result = backend.execute_circuit(circuit, nshots=nshots)
-        
+
         return best, params, extra, circuit, result.frequencies(binary=True)
 
     def qubo_to_qaoa_object(self, params: list = None):
