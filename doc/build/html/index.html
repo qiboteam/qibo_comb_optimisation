@@ -3,17 +3,17 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="API Reference" href="combinatorial_classes.html" />
+<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Optimisation class" href="optimisation_class.html" />
 
     <link rel="shortcut icon" href="_static/favicon.ico"/><!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Qibo-comb-optimisation · v0.1.0</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/css/style.css?v=0809a0bf" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=302659d7" />
-    
-    
+
+
 
 
 <style>
@@ -23,29 +23,29 @@
   --color-brand-primary: #6400FF;
   --color-brand-secondary: #6400FF;
   --color-brand-content: #6400FF;
-  
+
   }
   @media not print {
     body[data-theme="dark"] {
       --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
     }
     @media (prefers-color-scheme: dark) {
       body:not([data-theme="light"]) {
         --color-code-background: #202020;
   --color-code-foreground: #d0d0d0;
-  
+
       }
     }
   }
 </style></head>
   <body>
-    
+
     <script>
       document.body.dataset.theme = localStorage.getItem("theme") || "auto";
     </script>
-    
+
 
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <symbol id="svg-toc" viewBox="0 0 24 24">
@@ -191,16 +191,16 @@
   </header>
   <aside class="sidebar-drawer">
     <div class="sidebar-container">
-      
+
       <div class="sidebar-sticky"><a class="sidebar-brand" href="#">
-  
+
   <div class="sidebar-logo-container">
     <img class="sidebar-logo only-light" src="_static/qibo_logo_dark.svg" alt="Light Logo"/>
     <img class="sidebar-logo only-dark" src="_static/qibo_logo_light.svg" alt="Dark Logo"/>
   </div>
-  
+
   <span class="sidebar-brand-text">Qibo-comb-optimisation · v0.1.0</span>
-  
+
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
   <input type="hidden" name="check_keywords" value="yes">
@@ -209,7 +209,8 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="combinatorial_classes.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="optimisation_class.html">Optimisation class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="combinatorial_classes.html">Combinatorial classes</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Documentation links</span></p>
 <ul>
@@ -227,7 +228,7 @@
 </div>
 
       </div>
-      
+
     </div>
   </aside>
   <div class="main">
@@ -267,30 +268,26 @@
         <article role="main" id="furo-main-content">
           <section id="what-is-qibo-comb-optimisation">
 <h1>What is qibo-comb-optimisation?<a class="headerlink" href="#what-is-qibo-comb-optimisation" title="Link to this heading">¶</a></h1>
-<p>Qibo-comb-optimisation is a Qibo plugin that has tools to solve combinatorial optimisation problems.</p>
+<p>qibo-comb-optimisation is a Qibo plugin that has tools to solve combinatorial optimisation problems.</p>
 </section>
 <section id="installation-instructions">
 <h1>Installation instructions<a class="headerlink" href="#installation-instructions" title="Link to this heading">¶</a></h1>
 <p>Install first the package dependencies with the following commands.</p>
-<p>We recommend to start with a fresh virtual environment to avoid dependencies
-conflicts with previously installed packages.</p>
+<p>We recommend to start with a fresh virtual environment to avoid dependencies conflicts with previously installed packages.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>./env
 <span class="nb">source</span><span class="w"> </span>activate<span class="w"> </span>./env/bin/activate
 </pre></div>
 </div>
 <p>The qibo-comb-optimisation package can be installed through pip:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>qibo-comb-optimisation
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>qibo_comb_optimisation
 </pre></div>
 </div>
 </section>
 <section id="quickstart">
 <h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">¶</a></h1>
 <p>Once installed, the plugin allows for…</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">qibo.models</span> <span class="kn">import</span> <span class="n">QFT</span>
-<span class="kn">from</span> <span class="nn">qibo</span> <span class="kn">import</span> <span class="n">gates</span>
-
-<span class="n">circuit</span> <span class="o">=</span> <span class="n">qibo</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">QFT</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">circuit</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">gates</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">qibo_comb_optimisation.optimisation_class.optimisation_class</span><span class="w"> </span><span class="kn">import</span> <span class="n">QUBO</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">qibo_comb_optimisation.combinatorial_classes.combinatorial_classes</span><span class="w"> </span><span class="kn">import</span> <span class="n">TSP</span> <span class="k">as</span> <span class="n">TSP</span>
 </pre></div>
 </div>
 </section>
@@ -299,7 +296,12 @@ conflicts with previously installed packages.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="combinatorial_classes.html">API Reference</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="optimisation_class.html">Optimisation class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="optimisation_class.html#qubo">QUBO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimisation_class.html#linear-problems">Linear Problems</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="combinatorial_classes.html">Combinatorial classes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="combinatorial_classes.html#travelling-salesman-problem">Travelling Salesman Problem</a></li>
 <li class="toctree-l2"><a class="reference internal" href="combinatorial_classes.html#maximum-independent-set">Maximum Independent Set</a></li>
 </ul>
@@ -324,18 +326,18 @@ conflicts with previously installed packages.</p>
         </article>
       </div>
       <footer>
-        
+
         <div class="related-pages">
-          <a class="next-page" href="combinatorial_classes.html">
+          <a class="next-page" href="optimisation_class.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">API Reference</div>
+                <div class="title">Optimisation class</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          
+
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -343,9 +345,9 @@ conflicts with previously installed packages.</p>
                 Copyright &#169; The Qibo team
             </div>
             Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
+
             <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
+
           </div>
           <div class="right-details">
             <div class="icons">
@@ -354,17 +356,17 @@ conflicts with previously installed packages.</p>
                         <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
                     </svg>
                 </a>
-              
+
             </div>
           </div>
         </div>
-        
+
       </footer>
     </div>
     <aside class="toc-drawer no-toc">
-      
-      
-      
+
+
+
     </aside>
   </div>
 </div><script src="_static/documentation_options.js?v=01f34227"></script>
@@ -374,5 +376,7 @@ conflicts with previously installed packages.</p>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="_static/copybutton.js?v=f281be69"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </body>
 </html>
