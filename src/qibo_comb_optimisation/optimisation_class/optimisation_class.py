@@ -308,11 +308,11 @@ class QUBO:
                 # manage diagonal term first
                 if (i, i) in self.Qdict:
                     f_value += self.Qdict[(i, i)]
-                    for j in range(i + 1, self.n):
-                        if x[j] != 0:
-                            f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
-                                (j, i), 0
-                            )
+                for j in range(i + 1, self.n):
+                    if x[j] != 0:
+                        f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
+                            (j, i), 0
+                        )
         return f_value
 
     def evaluate_grad_f(self, x):
@@ -410,30 +410,23 @@ class QUBO:
                 qp = QUBO(0, Qdict)
                 opt_vector, min_value = qp.brute_force()
                 print(opt_vector)
-                # >>> [1, 0]
+                # >>> [0, 1]
                 print(min_value)
-                # >>> -0.5
+                # >>> -1.0
         """
         possible_values = {}
         # A list of all the possible permutations for x vector
         vec_permutations = itertools.product([0, 1], repeat=self.n)
 
         for permutation in vec_permutations:
-            x = np.array(
-                [[var] for var in permutation]
-            )  # Converts the permutation into a column vector
-            value = self.evaluate_f(x)
-            possible_values[value] = (
-                x  # Adds the value and its vector to the dictionary
-            )
-
+            value = self.evaluate_f(permutation)
+            possible_values[value] = permutation
         min_value = min(
             possible_values.keys()
         )  # Lowest value of the objective function
         opt_vector = tuple(
-            possible_values[min_value].T[0]
+            possible_values[min_value]
         )  # Optimum vector x that produces the lowest value
-
         return opt_vector, min_value
 
     def canonical_q(self):
