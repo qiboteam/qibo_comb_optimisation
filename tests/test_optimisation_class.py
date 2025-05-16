@@ -102,6 +102,7 @@ def test_brute_force():
 
     assert len(opt_vector) == 2
     assert isinstance(min_value, float)
+    assert abs(min_value + 1.0) < 0.001
 
 
 def test_initialization_with_h_and_J():
