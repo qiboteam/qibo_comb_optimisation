@@ -11,6 +11,7 @@ packages = [{include="qibo_comb_optimisation", from="src"}]
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
 qibo = "^0.2.14"
+recommonmark = "^0.7.1"
 
 [tool.poetry.group.analysis.dependencies]
 pylint = "^3.2.2"
