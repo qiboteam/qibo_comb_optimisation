@@ -310,9 +310,7 @@ class QUBO:
                     f_value += self.Qdict[(i, i)]
                 for j in range(i + 1, self.n):
                     if x[j] != 0:
-                        f_value += self.Qdict.get((i, j), 0) + self.Qdict.get(
-                            (j, i), 0
-                        )
+                        f_value += self.Qdict.get((i, j), 0) + self.Qdict.get((j, i), 0)
         return f_value
 
     def evaluate_grad_f(self, x):
@@ -694,14 +692,23 @@ class QUBO:
             alphas=optimised_alphas,
             custom_mixer=custom_mixer,
         )
+        original_circuit = Circuit.copy(circuit)
         if noise_model is not None:
             circuit = noise_model.apply(circuit)
-        # print("Final circuit:\n")
-        # print(circuit)
 
         result = backend.execute_circuit(circuit, nshots=nshots)
 
-        return best, params, extra, circuit, result.frequencies(binary=True)
+        if noise_model is not None:
+            return (
+                best,
+                params,
+                extra,
+                circuit,
+                result.frequencies(binary=True),
+                original_circuit,
+            )
+        else:
+            return best, params, extra, circuit, result.frequencies(binary=True)
 
     def qubo_to_qaoa_object(self, params: list = None):
         """
