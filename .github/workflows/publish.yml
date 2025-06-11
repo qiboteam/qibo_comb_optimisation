@@ -34,4 +34,4 @@ jobs:
       dependency-path: "**/poetry.lock"
       trigger-label: "${{ needs.evaluate-label.outputs.label }}"
       poetry-extras: --with docs
-      project: qiboml
+      project: qibo-comb-optimization
