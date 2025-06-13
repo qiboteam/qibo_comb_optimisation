@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "qibo_comb_optimisation"
-version = "0.1.0"
-description = "higher-level application developments for combinatorial optimisation problems"
+version = "0.0.1"
+description = "High level application module for solving combinatorial optimisation problems with Qibo"
 authors = ["The Qibo team"]
 license = "Apache-2.0"
 readme = "README.md"
@@ -9,29 +9,35 @@ repository = "https://github.com/qiboteam/qibo-comb-optimisation/"
 packages = [{include="qibo_comb_optimisation", from="src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-qibo = "^0.2.14"
-
-[tool.poetry.group.analysis.dependencies]
-pylint = "^3.2.2"
-
-[tool.poetry.group.tests.dependencies]
-pytest = "^8.2.1"
-pytest-cov = "^4.0.0"
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^7.3.7"
+python = ">=3.10,<3.14"
+qibo = ">=0.2.18"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.3.7"
+furo = "^2024.08.06"
+recommonmark = "^0.7.1"
+
+[tool.poetry.group.tests]
+optional = true
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^8.2.1"
+pytest-cov = "^4.0.0"
+pytest-env = ">=0.8.1"
+pylint = "^3.3.5"
 
 [tool.pytest.ini_options]
 testpaths = ['tests/']
 filterwarnings = ['ignore::RuntimeWarning']
 addopts = [
   '--cov=qibo_comb_optimisation',
-  '--cov-append',
   '--cov-report=xml',
   '--cov-report=html',
   '--durations=60',
@@ -44,3 +50,6 @@ lint-warnings = "pylint src --exit-zero"
 docs = "make -C doc html"
 docs-clean = "make -C doc clean"
 test-docs = "make -C doc doctest"
+
+[tool.pylint.reports]
+output-format = "colorized"
