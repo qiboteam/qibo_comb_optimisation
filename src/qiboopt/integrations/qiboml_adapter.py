@@ -58,7 +58,41 @@ def optimize_qaoa_with_qiboml(
     backend,
     density_matrix: bool = False,
 ) -> tuple[float, np.ndarray, dict[str, Any]]:
-    """Optimize QAOA parameters using qiboml's pytorch interface."""
+    """
+    Optimize QAOA parameters using qiboml's pytorch interface.
+
+    Args:
+        qubo: A QUBO object
+        parameters: Parameters for initialization for QAOA circuit
+        p (int): Number of layers
+        nshots: Number of shots. Use "None" to use exact statevector.
+        noise_model (:class:`qibo.noise.NoiseModel`, optional): a ``NoiseModel`` of Qibo,
+            which is applied to the given circuit to perform noisy simulations.
+            In case a `transpiler` is passed, the noise model is applied to the transpiled
+            circuit. Defaults to ``None``, and no noise is added.
+        custom_mixer (List[:class:`qibo.models.Circuit`]): An optional function that takes as input custom mixers.
+            If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
+            If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
+            If len(custom_mixer) != 1 and != len(gammas), raise an error.
+        has_alphas (bool): Indicate whether XQAOA mode is being used.
+        optimizer (string): indicate whether to use adam or sgd
+        lr (float): learning rate
+        epochs (int): number of epochs
+        differentiation (str): qiboml differentiation method. Possible strings are None, 'psr', 'jax',
+            'adjoint', 'torch'.
+        backend (:class:`qibo.backends.abstract.Backend`, optional): backend to be used in the execution.
+                If ``None``, it uses the current backend. Defaults to ``None``.
+        density_matrix (bool): Indicate whether to use density matrix circuit.
+
+    Returns:
+        best (float): Lowest energy (including the constant energy shift) observed over all
+            epochs.
+        best_params (np.ndarray): Variational parameters that achieved ``best``, as a ``float64`` array
+            of the same shape as ``parameters``.
+        extra (dict):
+            A dictionary with the following information, engine, optimizer, learning_rate, epochs and loss_history.
+
+    """
     try:
         import torch
     except ImportError as exc:

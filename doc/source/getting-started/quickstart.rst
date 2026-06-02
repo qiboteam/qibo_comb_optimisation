@@ -41,8 +41,7 @@ QUBO problems can be solved using the `QAOA <https://arxiv.org/abs/1709.03489>`_
 
 By default, qiboopt builds QAOA circuits with ``density_matrix=False`` so that
 standard state-vector and tensor-network backends can execute larger circuits.
-Set ``density_matrix=True`` only when you explicitly need a density-matrix
-circuit:
+Set ``density_matrix=True`` only when a density-matrix circuit is required:
 
 .. code-block:: python
 
