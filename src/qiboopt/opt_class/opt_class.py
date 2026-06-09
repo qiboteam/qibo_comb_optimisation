@@ -531,7 +531,7 @@ class QUBO:
             gammas (List[float]): parameters for phasers
             betas (List[float]): parameters for X mixers
             alphas (List[float], optional): parameters for Y mixers for XQAOA
-            custom_mixer (List[Callable]): optional argument that takes as input custom mixer callables.
+            custom_mixer (List[Callable[[List[float]], :class: `qibo.models.Circuit`]]): optional argument that takes as input custom mixer callables.
                 If len(custom_mixer) == 1, then use this one callable as mixer for all layers.
                 If len(custom_mixer) == len(gammas), then use one callable per layer.
                 If len(custom_mixer) != 1 and != len(gammas), raise an error.
@@ -668,14 +668,14 @@ class QUBO:
             maxiter (int, optional): Maximum number of iterations used in the minimiser. Defaults to 10.
             cvar_delta (float, optional): Represents the quantile threshold used for calculating the CVaR. Defaults to
                 `0.25`.
-            custom_mixer (List[Callable]): optional argument that takes as input custom mixer callables.
+            custom_mixer (List[Callable[[List[float]], :class: `qibo.models.Circuit`]]): optional argument that takes as input custom mixer callables.
                 If len(custom_mixer) == 1, then use this one callable as mixer for all layers.
                 If len(custom_mixer) == len(gammas), then use one callable per layer.
                 If len(custom_mixer) != 1 and != len(gammas), raise an error.
             backend (:class:`qibo.backends.abstract.Backend`, optional): backend to be used in the execution.
                 If ``None``, it uses the current backend. Defaults to ``None``.
             noise_model (:class:`qibo.noise.NoiseModel`, optional): noise model applied to simulate noisy computations.
-                Defaults to None. Supplying a noise model promotes QAOA circuits to density-matrix mode.
+                Defaults to None. If a noise model is provided, QAOA circuits are constructed in  density-matrix mode.
             engine (str, optional): Training engine. ``"legacy"`` uses ``qibo.optimizers.optimize``.
                 ``"qiboml"`` uses qiboml's pytorch ``QuantumModel`` training loop. Defaults to ``"legacy"``.
             optimizer (str, optional): Optimizer name used when ``engine="qiboml"``.
@@ -688,9 +688,8 @@ class QUBO:
                 Supported values are ``None``, ``"PSR"``, ``"Jax"``, and ``"Adjoint"``.
                 Defaults to ``None``.
             density_matrix (bool, optional): If ``True``, build density-matrix QAOA circuits.
-                Defaults to ``False``. If a noise model is supplied, this is automatically
-                promoted to ``True`` because Qibo noisy simulation requires density matrices
-                for exact/no-measurement execution.
+                Defaults to ``False``. If a noise model is provided, density-matrix mode is adopted
+                because Qibo noisy simulation requires density matrices for exact/no-measurement execution.
 
         Returns:
             Tuple[float, List[float], dict, :class:`qibo.models.Circuit`, dict]: A tuple containing:
