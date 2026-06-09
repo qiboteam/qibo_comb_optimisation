@@ -285,10 +285,10 @@ def test_qubo_to_qaoa_circuit_custom_mixer_promotes_density_matrix():
     qubo = QUBO(0, {0: 1, 1: -1}, {(0, 1): 0.5})
     mixer_calls = []
 
-    def mixer(beta_slice):
-        mixer_calls.append(beta_slice)
+    def mixer(beta_param):
+        mixer_calls.append(beta_param)
         mixer_circuit = Circuit(2, density_matrix=True)
-        mixer_circuit.add(gates.RX(0, beta_slice[0]))
+        mixer_circuit.add(gates.RX(0, beta_param[0]))
         return mixer_circuit
 
     circuit = qubo.qubo_to_qaoa_circuit(
@@ -305,10 +305,10 @@ def test_qubo_to_qaoa_circuit_explicit_density_matrix_uses_custom_mixer():
     qubo = QUBO(0, {0: 1, 1: -1}, {(0, 1): 0.5})
     mixer_calls = []
 
-    def mixer(beta_slice):
-        mixer_calls.append(beta_slice)
+    def mixer(beta_param):
+        mixer_calls.append(beta_param)
         mixer_circuit = Circuit(2, density_matrix=True)
-        mixer_circuit.add(gates.RX(0, beta_slice[0]))
+        mixer_circuit.add(gates.RX(0, beta_param[0]))
         return mixer_circuit
 
     circuit = qubo.qubo_to_qaoa_circuit(
@@ -325,9 +325,9 @@ def test_qubo_to_qaoa_circuit_explicit_density_matrix_uses_custom_mixer():
 def test_qubo_to_qaoa_circuit_rejects_invalid_custom_mixer_length():
     qubo = QUBO(0, {0: 1, 1: -1}, {(0, 1): 0.5})
 
-    def mixer(beta_slice):
+    def mixer(beta_param):
         mixer_circuit = Circuit(2)
-        mixer_circuit.add(gates.RX(0, beta_slice[0]))
+        mixer_circuit.add(gates.RX(0, beta_param[0]))
         return mixer_circuit
 
     with pytest.raises(
