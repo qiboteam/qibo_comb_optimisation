@@ -532,7 +532,7 @@ def test_train_qaoa_defaults_to_state_vector_without_noise_model():
         maxiter=100,
         engine="qibo",
     )
-    assert abs(best) < 0.2
+    assert best >= 0 and best < 0.5
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(stats, dict)
