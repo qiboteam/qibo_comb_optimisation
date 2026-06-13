@@ -25,7 +25,7 @@ def _qiboml_available():
     return True
 
 
-ENGINES = ["legacy"] + (["qiboml"] if _qiboml_available() else [])
+ENGINES = ["qibo"] + (["qiboml"] if _qiboml_available() else [])
 
 
 def test_initialization():
@@ -265,8 +265,9 @@ def test_qubo_to_qaoa_circuit_defaults_to_state_vector():
         betas=[0.3],
         include_measurements=False,
     )
-    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == 2
     assert circuit.density_matrix is False
+
 
 
 def test_qubo_to_qaoa_circuit_can_enable_density_matrix():
@@ -277,7 +278,7 @@ def test_qubo_to_qaoa_circuit_can_enable_density_matrix():
         include_measurements=False,
         density_matrix=True,
     )
-    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == 2
     assert circuit.density_matrix is True
 
 
@@ -507,7 +508,7 @@ def test_train_qaoa_with_noise_model_returns_original_circuit():
         nshots=20,
         noise_model=noise_model,
         maxiter=5,
-        engine="legacy",
+        engine="qibo",
     )
 
     assert len(result) == 6
@@ -528,11 +529,11 @@ def test_train_qaoa_defaults_to_state_vector_without_noise_model():
     best, params, extra, circuit, stats = qp.train_QAOA(
         gammas=[0.1],
         betas=[0.2],
-        nshots=20,
-        maxiter=5,
-        engine="legacy",
+        nshots=100,
+        maxiter=100,
+        engine="qibo",
     )
-    assert np.isfinite(best)
+    assert abs(best) < 0.2
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(stats, dict)
@@ -549,12 +550,12 @@ def test_train_qaoa_exact_noise_model_uses_density_matrix():
         betas=[0.2],
         nshots=None,
         noise_model=noise_model,
-        maxiter=5,
-        engine="legacy",
+        maxiter=100,
+        engine="qibo",
     )
 
     best, params, extra, circuit, stats, original_circuit = result
-    assert np.isfinite(best)
+    assert abs(best) < 1
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(stats, dict)
@@ -576,7 +577,7 @@ def test_train_qaoa_exact_mode_returns_probabilities(nshots, regular_loss):
         nshots=nshots,
         regular_loss=regular_loss,
         maxiter=5,
-        engine="legacy",
+        engine="qibo",
         **kwargs,
     )
     assert np.isfinite(best)

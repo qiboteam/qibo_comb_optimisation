@@ -77,7 +77,7 @@ The Conditional Variance at Risk (CVaR) can also be used as an alternative loss 
    betas = [0.3, 0.4]
    output = qp.train_QAOA(gammas=gammas, betas=betas, regular_loss=False, cvar_delta=0.1)
 
-To use qiboml's pytorch training loop instead of the legacy optimizer, set ``engine="qiboml"``:
+To use qiboml's pytorch training loop instead of the qibo optimizer, set ``engine="qiboml"``:
 
 .. code-block:: python
 

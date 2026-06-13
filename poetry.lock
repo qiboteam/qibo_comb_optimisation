@@ -3842,7 +3842,7 @@ zstd = ["zstandard (>=0.18.0)"]
 [[package]]
 name = "webencodings"
 version = "0.5.1"
-description = "Character encoding aliases for legacy web content"
+description = "Character encoding aliases for qibo web content"
 optional = false
 python-versions = "*"
 groups = ["docs"]

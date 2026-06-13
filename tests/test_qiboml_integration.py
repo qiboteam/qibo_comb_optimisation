@@ -122,11 +122,11 @@ def test_optimize_qaoa_with_qiboml_raises_when_qiboml_missing(monkeypatch):
         )
 
 
-def test_legacy_engine_does_not_require_qiboml(monkeypatch):
+def test_qibo_engine_does_not_require_qiboml(monkeypatch):
     import qiboopt.integrations.qiboml_adapter as adapter_module
 
     def _should_not_be_called(**kwargs):
-        raise AssertionError("qiboml adapter should not be called for legacy engine")
+        raise AssertionError("qiboml adapter should not be called for qibo engine")
 
     monkeypatch.setattr(
         adapter_module, "optimize_qaoa_with_qiboml", _should_not_be_called
@@ -137,7 +137,7 @@ def test_legacy_engine_does_not_require_qiboml(monkeypatch):
         betas=[0.3, 0.4],
         nshots=100,
         maxiter=5,
-        engine="legacy",
+        engine="qibo",
     )
     assert isinstance(best, float)
     assert isinstance(params, np.ndarray)

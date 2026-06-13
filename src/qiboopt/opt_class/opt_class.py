@@ -644,7 +644,7 @@ class QUBO:
         custom_mixer=None,
         backend=None,
         noise_model=None,
-        engine="legacy",
+        engine="qibo",
         optimizer="adam",
         lr=0.05,
         epochs=100,
@@ -676,8 +676,8 @@ class QUBO:
                 If ``None``, it uses the current backend. Defaults to ``None``.
             noise_model (:class:`qibo.noise.NoiseModel`, optional): noise model applied to simulate noisy computations.
                 Defaults to None. If a noise model is provided, QAOA circuits are constructed in  density-matrix mode.
-            engine (str, optional): Training engine. ``"legacy"`` uses ``qibo.optimizers.optimize``.
-                ``"qiboml"`` uses qiboml's pytorch ``QuantumModel`` training loop. Defaults to ``"legacy"``.
+            engine (str, optional): Training engine. ``"qibo"`` uses ``qibo.optimizers.optimize``.
+                ``"qiboml"`` uses qiboml's pytorch ``QuantumModel`` training loop. Defaults to ``"qibo"``.
             optimizer (str, optional): Optimizer name used when ``engine="qiboml"``.
                 Supported values are ``"adam"`` and ``"sgd"``. Defaults to ``"adam"``.
             lr (float, optional): Learning rate used when ``engine="qiboml"``.
@@ -745,10 +745,10 @@ class QUBO:
         if has_alphas:
             parameters += list(alphas)
 
-        if engine not in ("legacy", "qiboml"):
+        if engine not in ("qibo", "qiboml"):
             raise_error(
                 ValueError,
-                f"Unsupported engine '{engine}'. Use 'legacy' or 'qiboml'.",
+                f"Unsupported engine '{engine}'. Use 'qibo' or 'qiboml'.",
             )
 
         if not regular_loss and not (0 < cvar_delta <= 1):
@@ -761,11 +761,11 @@ class QUBO:
 
             warnings.warn(
                 "engine='qiboml' does not yet support CVaR loss (regular_loss=False). "
-                "Falling back to engine='legacy'.",
+                "Falling back to engine='qibo'.",
                 UserWarning,
                 stacklevel=2,
             )
-            engine = "legacy"
+            engine = "qibo"
 
         def _probability_dict_from_state(result):
             probabilities = np.asarray(result.probabilities()).ravel()
