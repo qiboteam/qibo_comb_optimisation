@@ -269,7 +269,6 @@ def test_qubo_to_qaoa_circuit_defaults_to_state_vector():
     assert circuit.density_matrix is False
 
 
-
 def test_qubo_to_qaoa_circuit_can_enable_density_matrix():
     qubo = QUBO(0, {0: 1, 1: -1}, {(0, 1): 0.5})
     circuit = qubo.qubo_to_qaoa_circuit(
