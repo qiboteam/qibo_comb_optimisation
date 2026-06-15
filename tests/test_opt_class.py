@@ -483,13 +483,13 @@ def test_train_qaoa_qiboml_cvar_fallback_warns():
         best, params, extra, circuit, stats = qp.train_QAOA(
             gammas=[0.1, 0.2],
             betas=[0.2, 0.3],
-            nshots=20,
+            nshots=100,
             regular_loss=False,
             cvar_delta=0.5,
             engine="qiboml",
-            maxiter=5,
+            maxiter=100,
         )
-    assert np.isfinite(best)
+    assert abs(best) < 0.001
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
@@ -504,15 +504,15 @@ def test_train_qaoa_with_noise_model_returns_original_circuit():
     result = qp.train_QAOA(
         gammas=[0.1, 0.2],
         betas=[0.2, 0.3],
-        nshots=20,
+        nshots=100,
         noise_model=noise_model,
-        maxiter=5,
+        maxiter=100,
         engine="qibo",
     )
 
     assert len(result) == 6
     best, params, extra, circuit, stats, original_circuit = result
-    assert np.isfinite(best)
+    assert abs(best) < 0.5
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
@@ -575,11 +575,11 @@ def test_train_qaoa_exact_mode_returns_probabilities(nshots, regular_loss):
         betas=[0.2, 0.3],
         nshots=nshots,
         regular_loss=regular_loss,
-        maxiter=5,
+        maxiter=100,
         engine="qibo",
         **kwargs,
     )
-    assert np.isfinite(best)
+    assert abs(best) < 1
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
