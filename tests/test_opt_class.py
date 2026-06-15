@@ -490,6 +490,7 @@ def test_train_qaoa_qiboml_cvar_fallback_warns():
             maxiter=100,
         )
     assert abs(best) < 0.001
+    assert stats['00'] > 0.8
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
@@ -513,6 +514,7 @@ def test_train_qaoa_with_noise_model_returns_original_circuit():
     assert len(result) == 6
     best, params, extra, circuit, stats, original_circuit = result
     assert abs(best) < 0.5
+    assert stats['00'] > 0.8
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
@@ -533,6 +535,7 @@ def test_train_qaoa_defaults_to_state_vector_without_noise_model():
         engine="qibo",
     )
     assert best >= 0 and best < 0.5
+    assert stats['00'] > 0.8
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(stats, dict)
@@ -555,6 +558,7 @@ def test_train_qaoa_exact_noise_model_uses_density_matrix():
 
     best, params, extra, circuit, stats, original_circuit = result
     assert abs(best) < 1
+    assert stats['00'] > 0.8
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(stats, dict)
@@ -579,7 +583,11 @@ def test_train_qaoa_exact_mode_returns_probabilities(nshots, regular_loss):
         engine="qibo",
         **kwargs,
     )
-    assert abs(best) < 1
+    if not regular_loss:
+        assert abs(best) < 0.01
+    else:
+        assert abs(best) < 1
+    assert stats['00'] > 0.8
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(circuit, Circuit)
