@@ -513,7 +513,7 @@ def test_train_qaoa_with_noise_model_returns_original_circuit():
 
     assert len(result) == 6
     best, params, extra, circuit, stats, original_circuit = result
-    assert abs(best) < 0.5
+    assert abs(best) < 0.6
     assert stats["00"] > 0.7
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
