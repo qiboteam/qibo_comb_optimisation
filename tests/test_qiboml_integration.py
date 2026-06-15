@@ -266,7 +266,7 @@ def test_qiboml_engine_accepts_optimizer_class():
         epochs=5,
     )
     assert abs(best) < 1.5
-    assert freqs['00'] > 0.7
+    assert freqs["00"] > 0.7
     assert isinstance(params, np.ndarray)
     assert isinstance(extra, dict)
     assert isinstance(freqs, dict)
