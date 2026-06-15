@@ -15,6 +15,14 @@ def _energy_shift(qubo) -> float:
 
 
 def _get_differentiation_class(name: str | None):
+    """
+    Args:
+        name (str | None): Name of the differentiation backend. Supported values are
+        - "None" or "torch"L use qiboml's default PyTorch autograd
+        - "psr": parameter-shift rule
+        - "jax" JAX-based differentiation
+        - "adjoint": adjoint differentiation.
+    """
     if name is None or name == "torch":
         return None
 

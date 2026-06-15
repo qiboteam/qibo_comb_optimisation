@@ -116,14 +116,14 @@ class QUBO:
             self.J = J
             self.Qdict = {(v, v): -2.0 * bias for v, bias in h.items()}
 
-            # next the opt_class biases
+            # add contributions from pairwise Ising couplings to the equivalent QUBO.
             for (u, v), bias in self.J.items():
                 if bias and u != v:
                     self.Qdict[(u, v)] = 4.0 * bias
                     self.Qdict[(u, u)] = self.Qdict.get((u, u), 0) - 2.0 * bias
                     self.Qdict[(v, v)] = self.Qdict.get((v, v), 0) - 2.0 * bias
 
-            # finally adjust the offset based on QUBO definitions rather than Ising formulation
+            # adjust the constant term so that the constructed QUBO objective is equivalent to the input Ising model.
             self.offset += sum(J.values()) + sum(h.values())
         else:
             raise_error(
@@ -289,13 +289,19 @@ class QUBO:
 
         Maps a quadratic unconstrained binary optimisation (QUBO) problem defined over binary variables
         (:math:`\\{0, 1\\}`), where the linear term is contained along the diagonal of :math:`Q` (:math:`x' Qx`), to an
-        Ising model defined on spin variables (:math:`\\{-1, +1\\}`). More specifically, returns the the :math:`h` and
+        Ising model defined on spin variables (:math:`\\{-1, +1\\}`). More specifically, returns the :math:`h` and
         :math:`J` variables defining the Ising model as well as the constant value representing the offset in energy
         between the two problem formulations.
 
         .. math::
 
              x'  Q  x  = \\text{constant} + s'  J  s + h'  s
+
+        The conversion uses the spin convention
+
+        .. math::
+
+            x_i = \\frac{1 - s_i}{2}, \\quad s_i \\in \\{-1, +1\\}.
 
         Returns:
             (dict, dict, float): A 3-tuple containing: ``h``: the linear coefficients of the Ising problem, ``J``:
@@ -653,8 +659,8 @@ class QUBO:
     ):
         """
         Constructs the QAOA or XQAOA circuit with optional parameters for the mixers or phases before using a classical
-        optimiser to search for the optimal parameters which minimise the cost function (either expected value or
-        Conditional Variance at Risk (CVaR).
+        optimiser to search for the optimal parameters which minimise the cost function (either expected value if "regular_loss=True" or
+        Conditional Variance at Risk (CVaR) if "regular_loss=False".
 
         Args:
             gammas (List[float], optional): parameters for phasers.
