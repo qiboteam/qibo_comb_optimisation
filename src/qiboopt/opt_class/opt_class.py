@@ -1012,6 +1012,10 @@ class LinearProblem:
         # TODO: raise ValueError if A and b have incompatible dimensions.
         self.A = np.atleast_2d(A)
         self.b = np.array([b]) if np.isscalar(b) else np.asarray(b)
+        if self.A.shape[0] != self.b.shape[0]:
+            raise ValueError(
+                f"Incompatible dimensions: A has {self.A.shape[0]} rows but b has {self.b.shape[0]} elements"
+            )
         self.n = self.A.shape[1]
 
     def __add__(self, other_linear):

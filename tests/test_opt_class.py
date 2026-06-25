@@ -802,6 +802,25 @@ def test_linear_initialization():
     assert lp.n == 2
 
 
+def test_linear_initialization_b_scalar():
+    """Test initialization with scalar b"""
+    A = np.array([[1, 2]])  # 1 row
+    b = 5  # scalar
+    lp = LinearProblem(A, b)
+    assert np.array_equal(lp.A, A)
+    assert np.array_equal(lp.b, np.array([5]))
+    assert lp.n == 2
+
+
+def test_linear_initialization_dimension_mismatch_scalar_b():
+    """Test dimension mismatch with scalar b (should work if A has 1 row)"""
+    A = np.array([[1, 2], [3, 4]])  # 2 rows
+    b = 5  # scalar becomes [5] with 1 element
+
+    with pytest.raises(ValueError, match="Incompatible dimensions"):
+        LinearProblem(A, b)
+
+
 def test_linear_add_multiplication_operators():
     """Test addition and multiplication operators for LinearProblem"""
     lp1 = LinearProblem(np.array([[1, 2], [3, 4]]), np.array([5, 6]))
