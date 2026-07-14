@@ -194,7 +194,13 @@ class QUBO:
                 circuit.add(gates.RY(i, 2 * alpha))
 
     def _build(
-        self, gammas, betas, alphas=None, custom_mixer=None, include_measurements=True, density_matrix=density_matrix,
+        self,
+        gammas,
+        betas,
+        alphas=None,
+        custom_mixer=None,
+        include_measurements=True,
+        density_matrix=density_matrix,
     ):
         """
         Constructs the full QAOA circuit for the Ising model with p layers.
@@ -219,7 +225,8 @@ class QUBO:
                 if custom_mixer:
                     if custom_mixer[0].density_matrix != circuit.density_matrix:
                         raise_error(
-                            ValueError, f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit."
+                            ValueError,
+                            f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit.",
                         )
 
                     if len(gammas) != len(betas):
@@ -510,7 +517,11 @@ class QUBO:
         """
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             circuit = self._build(
-                gammas, betas, alphas, include_measurements=include_measurements, density_matrix=density_matrix
+                gammas,
+                betas,
+                alphas,
+                include_measurements=include_measurements,
+                density_matrix=density_matrix,
             )
         else:
             if custom_mixer:
@@ -524,7 +535,10 @@ class QUBO:
                 )
             else:
                 circuit = self._build(
-                    gammas, betas, include_measurements=include_measurements, density_matrix=density_matrix
+                    gammas,
+                    betas,
+                    include_measurements=include_measurements,
+                    density_matrix=density_matrix,
                 )
         return circuit
 
