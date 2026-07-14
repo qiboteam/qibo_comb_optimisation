@@ -347,6 +347,7 @@ def test_qubo_to_qaoa_svp_mixer_density_matrix_mismatch(
             density_matrix=circuit_density_matrix,
         )
 
+
 @pytest.mark.parametrize(
     "gammas, betas, alphas",
     [
