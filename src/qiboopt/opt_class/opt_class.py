@@ -194,7 +194,7 @@ class QUBO:
                 circuit.add(gates.RY(i, 2 * alpha))
 
     def _build(
-        self, gammas, betas, alphas=None, custom_mixer=None, include_measurements=True
+        self, gammas, betas, alphas=None, custom_mixer=None, include_measurements=True, density_matrix=density_matrix,
     ):
         """
         Constructs the full QAOA circuit for the Ising model with p layers.
@@ -206,7 +206,7 @@ class QUBO:
         p = len(gammas)
 
         # Apply initial Hadamard gates (uniform superposition)
-        circuit = Circuit(self.n, density_matrix=True)
+        circuit = Circuit(self.n, density_matrix=density_matrix)
         circuit.add(gates.H(i) for i in range(self.n))
 
         for layer in range(p):
@@ -217,6 +217,11 @@ class QUBO:
                 self._default_mixer(circuit, betas[layer], alphas[layer])
             else:
                 if custom_mixer:
+                    if custom_mixer[0].density_matrix != circuit.density_matrix:
+                        raise_error(
+                            ValueError, f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit."
+                        )
+
                     if len(gammas) != len(betas):
                         raise_error(
                             ValueError, f"Input {len(gammas) = } != {len(betas) = }."
@@ -482,6 +487,7 @@ class QUBO:
         alphas=None,
         custom_mixer=None,
         include_measurements=True,
+        density_matrix=False,
     ):
         """
         Constructs a QAOA or XQAOA circuit for the given QUBO problem.
@@ -496,13 +502,15 @@ class QUBO:
                 If len(custom_mixer) != 1 and != len(gammas), raise an error.
             include_measurements (bool, optional): If ``True``, append measurement gates to all qubits.
                 Defaults to ``True``.
+            density_matrix (bool): Enables `density_matrix` argument when constructing QAOA circuits to allow
+                :class:`qibo.noise.NoiseModel` to be added to the circuit. Defaults to ``False``.
 
         Returns:
             :class:`qibo.models.Circuit`: The QAOA or XQAOA circuit corresponding to the QUBO problem.
         """
         if alphas is not None:  # Use XQAOA, ignore mixer_function
             circuit = self._build(
-                gammas, betas, alphas, include_measurements=include_measurements
+                gammas, betas, alphas, include_measurements=include_measurements, density_matrix=density_matrix
             )
         else:
             if custom_mixer:
@@ -512,10 +520,11 @@ class QUBO:
                     alphas=None,
                     custom_mixer=custom_mixer,
                     include_measurements=include_measurements,
+                    density_matrix=density_matrix,
                 )
             else:
                 circuit = self._build(
-                    gammas, betas, include_measurements=include_measurements
+                    gammas, betas, include_measurements=include_measurements, density_matrix=density_matrix
                 )
         return circuit
 
@@ -533,6 +542,7 @@ class QUBO:
         custom_mixer=None,
         include_measurements=True,
         has_alphas=False,
+        density_matrix=False,
     ):
         """Build a QAOA circuit directly from flat block-ordered parameters."""
         gammas, betas, unpacked_alphas = self._split_qaoa_parameters(
@@ -544,6 +554,7 @@ class QUBO:
             alphas=unpacked_alphas,
             custom_mixer=custom_mixer,
             include_measurements=include_measurements,
+            density_matrix=density_matrix,
         )
 
     def make_qaoa_circuit_callable(
@@ -566,6 +577,7 @@ class QUBO:
                 custom_mixer=custom_mixer,
                 include_measurements=include_measurements,
                 has_alphas=has_alphas,
+                density_matrix=density_matrix,
             )
 
         qaoa_circuit.__signature__ = signature
@@ -583,6 +595,7 @@ class QUBO:
         method="cobyla",
         cvar_delta=0.25,
         custom_mixer=None,
+        density_matrix=False,
         backend=None,
         noise_model=None,
         engine="legacy",
@@ -612,6 +625,8 @@ class QUBO:
                 If len(custom_mixer) == 1, then use this one circuit as mixer for all layers.
                 If len(custom_mixer) == len(gammas), then use each circuit as mixer for each layer.
                 If len(custom_mixer) != 1 and != len(gammas), raise an error.
+            density_matrix (bool): Enables `density_matrix` argument when constructing QAOA circuits to allow
+                :class:`qibo.noise.NoiseModel` to be added to the circuit. Defaults to ``False``.
             backend (:class:`qibo.backends.abstract.Backend`, optional): backend to be used in the execution.
                 If ``None``, it uses the current backend. Defaults to ``None``.
             noise_model (:class:`qibo.noise.NoiseModel`, optional): noise model applied to simulate noisy computations.
@@ -733,6 +748,7 @@ class QUBO:
                     custom_mixer=custom_mixer,
                     include_measurements=not use_exact,
                     has_alphas=has_alphas,
+                    density_matrix=density_matrix,
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
@@ -768,6 +784,7 @@ class QUBO:
                     custom_mixer=custom_mixer,
                     include_measurements=not use_exact,
                     has_alphas=has_alphas,
+                    density_matrix=density_matrix,
                 )
                 if noise_model is not None:
                     circuit = noise_model.apply(circuit)
@@ -843,6 +860,7 @@ class QUBO:
             custom_mixer=custom_mixer,
             include_measurements=not use_exact,
             has_alphas=has_alphas,
+            density_matrix=density_matrix,
         )
         original_circuit = Circuit.copy(circuit)
         if noise_model is not None:
