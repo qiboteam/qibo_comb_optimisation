@@ -230,7 +230,14 @@ class QUBO:
 
                     # Extract number of betas per layer
                     betas_per_layer = len(betas) // p
-                    if custom_mixer[0](betas[layer * betas_per_layer : (layer + 1) * betas_per_layer]).density_matrix != circuit.density_matrix:
+                    if (
+                        custom_mixer[0](
+                            betas[
+                                layer * betas_per_layer : (layer + 1) * betas_per_layer
+                            ]
+                        ).density_matrix
+                        != circuit.density_matrix
+                    ):
                         raise_error(
                             ValueError,
                             f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit.",
