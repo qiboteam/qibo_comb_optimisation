@@ -304,6 +304,50 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
 
 
 @pytest.mark.parametrize(
+    "mixer_density_matrix, circuit_density_matrix",
+    [
+        (True, False),
+        (False, True),
+    ],
+)
+def test_qubo_to_qaoa_svp_mixer_density_matrix_mismatch(
+    mixer_density_matrix, circuit_density_matrix
+):
+    gammas = [0.1, 0.2]
+    betas = [0.3, 0.4]
+
+    numeric_qubo = {
+        (0, 4): 4.0,
+        (2, 4): 4.0,
+        (3, 1): 6.0,
+        (1, 1): -3.0,
+        (3, 5): 2.0,
+        (4, 4): -1.0,
+        (3, 3): -3.0,
+        (1, 5): 6.0,
+        (2, 0): 8.0,
+        (5, 5): -3.0,
+    }
+    offset = 5.0
+    name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
+
+    svp_mixers = [
+        lambda beta, idx=idx: create_svp_mixer(
+            name_to_index, beta, density_matrix=mixer_density_matrix
+        )
+        for idx in range(len(betas))
+    ]
+
+    with pytest.raises(ValueError):
+        QUBO(offset, numeric_qubo).qubo_to_qaoa_circuit(
+            gammas,
+            betas,
+            alphas=None,
+            custom_mixer=svp_mixers,
+            density_matrix=circuit_density_matrix,
+        )
+
+@pytest.mark.parametrize(
     "gammas, betas, alphas",
     [
         ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6]),
@@ -473,7 +517,7 @@ def test_train_qaoa_cvar_delta_validation():
         )
 
 
-def create_svp_mixer(name_to_index, beta):
+def create_svp_mixer(name_to_index, beta, density_matrix=False):
     """
     Helper function to create a mixer circuit
 
@@ -485,7 +529,7 @@ def create_svp_mixer(name_to_index, beta):
         :class:`qibo.models.Circuit`: Mixer circuit
     """
     n = len(name_to_index)
-    mixer = Circuit(n, density_matrix=False)
+    mixer = Circuit(n, density_matrix=density_matrix)
     # Get the set of indices where it takes values 1; to help construct the mixer
     active_set = {
         value
