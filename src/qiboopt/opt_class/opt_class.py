@@ -200,7 +200,7 @@ class QUBO:
         alphas=None,
         custom_mixer=None,
         include_measurements=True,
-        density_matrix=density_matrix,
+        density_matrix=False,
     ):
         """
         Constructs the full QAOA circuit for the Ising model with p layers.
@@ -223,12 +223,6 @@ class QUBO:
                 self._default_mixer(circuit, betas[layer], alphas[layer])
             else:
                 if custom_mixer:
-                    if custom_mixer[0].density_matrix != circuit.density_matrix:
-                        raise_error(
-                            ValueError,
-                            f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit.",
-                        )
-
                     if len(gammas) != len(betas):
                         raise_error(
                             ValueError, f"Input {len(gammas) = } != {len(betas) = }."
@@ -236,6 +230,11 @@ class QUBO:
 
                     # Extract number of betas per layer
                     betas_per_layer = len(betas) // p
+                    if custom_mixer[0](betas[layer * betas_per_layer : (layer + 1) * betas_per_layer]).density_matrix != circuit.density_matrix:
+                        raise_error(
+                            ValueError,
+                            f"Ensure density_matrix in custom_mixer is the same as density_matrix argument in QAOA circuit.",
+                        )
                     if len(custom_mixer) == 1:
                         circuit += custom_mixer[0](
                             betas[

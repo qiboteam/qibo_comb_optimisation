@@ -485,7 +485,7 @@ def create_svp_mixer(name_to_index, beta):
         :class:`qibo.models.Circuit`: Mixer circuit
     """
     n = len(name_to_index)
-    mixer = Circuit(n, density_matrix=True)
+    mixer = Circuit(n, density_matrix=False)
     # Get the set of indices where it takes values 1; to help construct the mixer
     active_set = {
         value
