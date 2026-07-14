@@ -578,7 +578,12 @@ class QUBO:
         )
 
     def make_qaoa_circuit_callable(
-        self, p, custom_mixer=None, has_alphas=False, include_measurements=False, density_matrix=False
+        self,
+        p,
+        custom_mixer=None,
+        has_alphas=False,
+        include_measurements=False,
+        density_matrix=False,
     ):
         """Create a fixed-arity callable for qiboml circuit tracing."""
         nparams = 3 * p if has_alphas else 2 * p
