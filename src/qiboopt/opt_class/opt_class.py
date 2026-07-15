@@ -776,6 +776,11 @@ class QUBO:
                     density_matrix=density_matrix,
                 )
                 if noise_model is not None:
+                    if density_matrix is False:
+                        raise_error(
+                            ValueError,
+                            f"noise_model requires density_matrix=True.",
+                        )
                     circuit = noise_model.apply(circuit)
 
                 if use_exact:
