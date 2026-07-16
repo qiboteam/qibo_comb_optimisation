@@ -685,7 +685,14 @@ def test_train_QAOA_svp_mixer_noise_model(gammas, betas, alphas, reg_loss, cvar_
     assert isinstance(result[4], dict)
 
 
-def test_train_qaoa_noise_model_requires_density_matrix():
+@pytest.mark.parametrize(
+    "regular_loss, cvar_delta",
+    [
+        (True, None),
+        (False, 0.5),
+    ],
+)
+def test_train_qaoa_noise_model_requires_density_matrix(regular_loss, cvar_delta):
     qp = QUBO(0, {(0, 0): 1.0})
 
     noise_model = NoiseModel()
@@ -695,6 +702,8 @@ def test_train_qaoa_noise_model_requires_density_matrix():
         qp.train_QAOA(
             gammas=[0.1],
             betas=[0.2],
+            regular_loss=regular_loss,
+            cvar_delta=cvar_delta,
             noise_model=noise_model,
             density_matrix=False,
         )

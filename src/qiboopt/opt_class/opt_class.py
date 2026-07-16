@@ -776,7 +776,7 @@ class QUBO:
                     density_matrix=density_matrix,
                 )
                 if noise_model is not None:
-                    if density_matrix is False:
+                    if not density_matrix:
                         raise_error(
                             ValueError,
                             f"noise_model requires density_matrix=True.",
@@ -817,9 +817,12 @@ class QUBO:
                     density_matrix=density_matrix,
                 )
                 if noise_model is not None:
-                    print(circuit.density_matrix)
+                    if not density_matrix:
+                        raise_error(
+                            ValueError,
+                            "noise_model requires density_matrix=True.",
+                        )
                     circuit = noise_model.apply(circuit)
-
                 if use_exact:
                     result = backend.execute_circuit(circuit)
                     result_probs = _probability_dict_from_state(result)
