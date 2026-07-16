@@ -817,7 +817,9 @@ class QUBO:
                     density_matrix=density_matrix,
                 )
                 if noise_model is not None:
+                    print(circuit.density_matrix)
                     circuit = noise_model.apply(circuit)
+
                 if use_exact:
                     result = backend.execute_circuit(circuit)
                     result_probs = _probability_dict_from_state(result)
@@ -878,6 +880,7 @@ class QUBO:
                 epochs=epochs,
                 differentiation=differentiation,
                 backend=backend,
+                density_matrix=density_matrix,
             )
         else:
             best, params, extra = optimize(

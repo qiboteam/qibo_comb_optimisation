@@ -56,6 +56,7 @@ def optimize_qaoa_with_qiboml(
     epochs: int,
     differentiation: str | None,
     backend,
+    density_matrix=False,
 ) -> tuple[float, np.ndarray, dict[str, Any]]:
     """Optimize QAOA parameters using qiboml's pytorch interface."""
     try:
@@ -86,6 +87,7 @@ def optimize_qaoa_with_qiboml(
         custom_mixer=custom_mixer,
         has_alphas=has_alphas,
         include_measurements=False,
+        density_matrix=density_matrix,
     )
     decoder = Expectation(
         nqubits=qubo.n,
