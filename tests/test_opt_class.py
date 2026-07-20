@@ -3,7 +3,7 @@ import itertools
 
 import numpy as np
 import pytest
-from qibo import Circuit, gates
+from qibo import Circuit, gates, get_backend, set_backend
 from qibo.models import QAOA
 from qibo.noise import DepolarizingError, NoiseModel
 from qibo.optimizers import optimize
@@ -657,6 +657,64 @@ def test_qubo_to_qaoa_object_params():
 
     assert isinstance(qaoa, QAOA)
     assert hasattr(qaoa, "hamiltonian")
+
+
+def test_qubo_energy_paths_consistency_single_qubit():
+    """Regression test for energy consistency across sampled/symbolic/exact paths.
+
+    QUBO: f(x) = x  => f(0)=0, f(1)=1
+    State prepared: |1>
+    """
+    set_backend("numpy")
+    backend = get_backend()
+
+    qubo = QUBO(0.0, {(0, 0): 1.0})
+
+    # Prepare |1> and measure
+    circ = Circuit(1)
+    circ.add(gates.X(0))
+    circ.add(gates.M(0))
+
+    nshots = 1000
+    freqs = backend.execute_circuit(circ, nshots=nshots).frequencies(binary=True)
+    sampled = (
+        sum(
+            qubo.evaluate_f([int(b) for b in bitstr]) * count
+            for bitstr, count in freqs.items()
+        )
+        / nshots
+    )
+
+    # Prepare |1> without measurement for expectation values
+    circ_no_m = Circuit(1)
+    circ_no_m.add(gates.X(0))
+
+    ham_expect = float(
+        qubo.construct_symbolic_Hamiltonian_from_QUBO().expectation(circ_no_m)
+    )
+    exact_loss = float(qubo.qubo_to_qaoa_object().hamiltonian.expectation(circ_no_m))
+
+    true_f1 = qubo.evaluate_f([1])
+
+    # Keep the original diagnostic values visible in pytest output on failure
+    debug_msg = (
+        f"\ntrue f(1)          : {true_f1}\n"
+        f"[A] sampled        : {sampled}\n"
+        f"[B] H expectation  : {ham_expect}\n"
+        f"[C] exact-mode loss: {exact_loss}\n"
+        f"qubo_to_ising      : {qubo.qubo_to_ising()}\n"
+    )
+
+    # Ground truth check
+    assert true_f1 == 1.0, debug_msg
+
+    # Sampling path should match ground truth for this deterministic preparation
+    assert sampled == pytest.approx(1.0, abs=1e-12), debug_msg
+
+    # The next two assertions enforce consistency goals.
+    # If current implementation is inconsistent, these will fail and expose the gap.
+    assert ham_expect == pytest.approx(true_f1, abs=1e-12), debug_msg
+    assert exact_loss == pytest.approx(true_f1, abs=1e-12), debug_msg
 
 
 def test_linear_initialization():
