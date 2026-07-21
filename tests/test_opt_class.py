@@ -719,8 +719,7 @@ def test_qubo_energy_paths_consistency_single_qubit():
 
 @pytest.mark.skipif(not _qiboml_available(), reason="qiboml/torch not installed")
 def test_qiboml_energy_consistency_with_direct_evaluation():
-    """The qiboml path should return energies consistent with direct QUBO evaluation.
-    """
+    """The qiboml path should return energies consistent with direct QUBO evaluation."""
     # Simple 2-qubit QUBO: f(x0, x1) = x0 + x1 + x0*x1
     # f(0,0)=0, f(1,0)=1, f(0,1)=1, f(1,1)=3
     qp = QUBO(0.0, {(0, 0): 1.0, (1, 1): 1.0, (0, 1): 1.0})
@@ -746,9 +745,10 @@ def test_qiboml_energy_consistency_with_direct_evaluation():
 
     # All losses in the history should also be within QUBO range.
     for i, loss in enumerate(extra["loss_history"]):
-        assert min_f <= loss <= max_f, (
-            f"loss_history[{i}]={loss:.6f} is outside the QUBO range [{min_f}, {max_f}]."
-        )
+        assert (
+            min_f <= loss <= max_f
+        ), f"loss_history[{i}]={loss:.6f} is outside the QUBO range [{min_f}, {max_f}]."
+
 
 def test_linear_initialization():
     A = np.array([[1, 2], [3, 4]])
