@@ -717,6 +717,39 @@ def test_qubo_energy_paths_consistency_single_qubit():
     assert exact_loss == pytest.approx(true_f1, abs=1e-12), debug_msg
 
 
+@pytest.mark.skipif(not _qiboml_available(), reason="qiboml/torch not installed")
+def test_qiboml_energy_consistency_with_direct_evaluation():
+    """The qiboml path should return energies consistent with direct QUBO evaluation.
+    """
+    # Simple 2-qubit QUBO: f(x0, x1) = x0 + x1 + x0*x1
+    # f(0,0)=0, f(1,0)=1, f(0,1)=1, f(1,1)=3
+    qp = QUBO(0.0, {(0, 0): 1.0, (1, 1): 1.0, (0, 1): 1.0})
+    all_values = [qp.evaluate_f([x0, x1]) for x0 in (0, 1) for x1 in (0, 1)]
+    min_f = min(all_values)
+    max_f = max(all_values)
+
+    best, params, extra, circuit, freqs = qp.train_QAOA(
+        gammas=[0.1],
+        betas=[0.2],
+        nshots=500,
+        engine="qiboml",
+        optimizer="adam",
+        lr=0.05,
+        epochs=5,
+    )
+
+    # The best loss must fall within [min_f, max_f]; a constant offset would push it outside.
+    assert min_f <= best <= max_f, (
+        f"qiboml best={best:.6f} is outside the QUBO range [{min_f}, {max_f}]. "
+        "This likely means an extra energy_shift is being applied."
+    )
+
+    # All losses in the history should also be within QUBO range.
+    for i, loss in enumerate(extra["loss_history"]):
+        assert min_f <= loss <= max_f, (
+            f"loss_history[{i}]={loss:.6f} is outside the QUBO range [{min_f}, {max_f}]."
+        )
+
 def test_linear_initialization():
     A = np.array([[1, 2], [3, 4]])
     b = np.array([5, 6])
