@@ -722,7 +722,7 @@ def test_qiboml_energy_consistency_with_direct_evaluation():
     """The qiboml path should return energies consistent with direct QUBO evaluation."""
     # Simple 2-qubit QUBO: f(x0, x1) = 10 + x0 + x1 + x0*x1
     # f(0,0)=0, f(1,0)=1, f(0,1)=1, f(1,1)=3
-    qp = QUBO(0.0, {(0, 0): 1.0, (1, 1): 1.0, (0, 1): 1.0})
+    qp = QUBO(10.0, {(0, 0): 1.0, (1, 1): 1.0, (0, 1): 1.0})
     all_values = [qp.evaluate_f([x0, x1]) for x0 in (0, 1) for x1 in (0, 1)]
     min_f = min(all_values)
     max_f = max(all_values)
