@@ -3,7 +3,7 @@ import itertools
 
 import numpy as np
 import pytest
-from qibo import Circuit, gates
+from qibo import Circuit, gates, get_backend, set_backend
 from qibo.models import QAOA
 from qibo.noise import DepolarizingError, NoiseModel
 from qibo.optimizers import optimize
@@ -729,6 +729,97 @@ def test_qubo_to_qaoa_object_params():
 
     assert isinstance(qaoa, QAOA)
     assert hasattr(qaoa, "hamiltonian")
+
+
+def test_qubo_energy_paths_consistency_single_qubit():
+    """Regression test for energy consistency across sampled/symbolic/exact paths.
+
+    QUBO: f(x) = x  => f(0)=0, f(1)=1
+    State prepared: |1>
+    """
+    set_backend("numpy")
+    backend = get_backend()
+
+    qubo = QUBO(0.0, {(0, 0): 1.0})
+
+    # Prepare |1> and measure
+    circ = Circuit(1)
+    circ.add(gates.X(0))
+    circ.add(gates.M(0))
+
+    nshots = 1000
+    freqs = backend.execute_circuit(circ, nshots=nshots).frequencies(binary=True)
+    sampled = (
+        sum(
+            qubo.evaluate_f([int(b) for b in bitstr]) * count
+            for bitstr, count in freqs.items()
+        )
+        / nshots
+    )
+
+    # Prepare |1> without measurement for expectation values
+    circ_no_m = Circuit(1)
+    circ_no_m.add(gates.X(0))
+
+    ham_expect = float(
+        qubo.construct_symbolic_Hamiltonian_from_QUBO().expectation(circ_no_m)
+    )
+    exact_loss = float(qubo.qubo_to_qaoa_object().hamiltonian.expectation(circ_no_m))
+
+    true_f1 = qubo.evaluate_f([1])
+
+    # Keep the original diagnostic values visible in pytest output on failure
+    debug_msg = (
+        f"\ntrue f(1)          : {true_f1}\n"
+        f"[A] sampled        : {sampled}\n"
+        f"[B] H expectation  : {ham_expect}\n"
+        f"[C] exact-mode loss: {exact_loss}\n"
+        f"qubo_to_ising      : {qubo.qubo_to_ising()}\n"
+    )
+
+    # Ground truth check
+    assert true_f1 == 1.0, debug_msg
+
+    # Sampling path should match ground truth for this deterministic preparation
+    assert sampled == pytest.approx(1.0, abs=1e-12), debug_msg
+
+    # The next two assertions enforce consistency goals.
+    # If current implementation is inconsistent, these will fail and expose the gap.
+    assert ham_expect == pytest.approx(true_f1, abs=1e-12), debug_msg
+    assert exact_loss == pytest.approx(true_f1, abs=1e-12), debug_msg
+
+
+@pytest.mark.skipif(not _qiboml_available(), reason="qiboml/torch not installed")
+def test_qiboml_energy_consistency_with_direct_evaluation():
+    """The qiboml path should return energies consistent with direct QUBO evaluation."""
+    # Simple 2-qubit QUBO: f(x0, x1) = 10 + x0 + x1 + x0*x1
+    # f(0,0)=10, f(1,0)=11, f(0,1)=11, f(1,1)=13; Ising constant = 11.25
+    qp = QUBO(10.0, {(0, 0): 1.0, (1, 1): 1.0, (0, 1): 1.0})
+    all_values = [qp.evaluate_f([x0, x1]) for x0 in (0, 1) for x1 in (0, 1)]
+    min_f = min(all_values)
+    max_f = max(all_values)
+
+    best, params, extra, circuit, freqs = qp.train_QAOA(
+        gammas=[0.1],
+        betas=[0.2],
+        nshots=500,
+        engine="qiboml",
+        optimizer="adam",
+        lr=0.05,
+        epochs=5,
+    )
+
+    # The best loss must fall within [min_f, max_f]; a constant offset would push it outside.
+    assert min_f <= best <= max_f, (
+        f"qiboml best={best:.6f} is outside the QUBO range [{min_f}, {max_f}]. "
+        "This likely means an extra energy_shift is being applied."
+    )
+
+    # All losses in the history should also be within QUBO range.
+    for i, loss in enumerate(extra["loss_history"]):
+        assert (
+            min_f <= loss <= max_f
+        ), f"loss_history[{i}]={loss:.6f} is outside the QUBO range [{min_f}, {max_f}]."
 
 
 def test_linear_initialization():

@@ -96,7 +96,6 @@ def optimize_qaoa_with_qiboml(
         noise_model=noise_model,
         backend=backend,
     )
-    energy_shift = _energy_shift(qubo)
 
     diff_class = _get_differentiation_class(differentiation)
     model = QuantumModel(
@@ -136,7 +135,7 @@ def optimize_qaoa_with_qiboml(
         loss = model()
         if loss.ndim > 0:
             loss = loss.squeeze()
-        loss_value = float(loss.detach().cpu().item()) + energy_shift
+        loss_value = float(loss.detach().cpu().item())
         losses.append(loss_value)
         if loss_value < best:
             best = loss_value
