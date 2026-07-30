@@ -304,6 +304,51 @@ def test_qubo_to_qaoa_svp_mixer(gammas, betas):
 
 
 @pytest.mark.parametrize(
+    "mixer_density_matrix, circuit_density_matrix",
+    [
+        (True, False),
+        (False, True),
+    ],
+)
+def test_qubo_to_qaoa_svp_mixer_density_matrix_mismatch(
+    mixer_density_matrix, circuit_density_matrix
+):
+    gammas = [0.1, 0.2]
+    betas = [0.3, 0.4]
+
+    numeric_qubo = {
+        (0, 4): 4.0,
+        (2, 4): 4.0,
+        (3, 1): 6.0,
+        (1, 1): -3.0,
+        (3, 5): 2.0,
+        (4, 4): -1.0,
+        (3, 3): -3.0,
+        (1, 5): 6.0,
+        (2, 0): 8.0,
+        (5, 5): -3.0,
+    }
+    offset = 5.0
+    name_to_index = {"w[1]": 0, "w[2]": 1, "x_1_0": 2, "x_2_0": 3, "y[1]": 4, "y[2]": 5}
+
+    svp_mixers = [
+        lambda beta, idx=idx: create_svp_mixer(
+            name_to_index, beta, density_matrix=mixer_density_matrix
+        )
+        for idx in range(len(betas))
+    ]
+
+    with pytest.raises(ValueError):
+        QUBO(offset, numeric_qubo).qubo_to_qaoa_circuit(
+            gammas,
+            betas,
+            alphas=None,
+            custom_mixer=svp_mixers,
+            density_matrix=circuit_density_matrix,
+        )
+
+
+@pytest.mark.parametrize(
     "gammas, betas, alphas",
     [
         ([0.1, 0.2], [0.3, 0.4], [0.5, 0.6]),
@@ -338,6 +383,7 @@ def test_train_QAOA(gammas, betas, alphas, reg_loss, cvar_delta, noise_model, en
         noise_model=noise_model,
         engine=engine,
         epochs=5,
+        density_matrix=True,
     )
     assert isinstance(result[0], float)
     assert isinstance(result[1], np.ndarray)
@@ -421,6 +467,7 @@ def test_train_qaoa_with_noise_model_returns_original_circuit():
         gammas=[0.1, 0.2],
         betas=[0.2, 0.3],
         nshots=20,
+        density_matrix=True,
         noise_model=noise_model,
         maxiter=5,
         engine="legacy",
@@ -473,7 +520,7 @@ def test_train_qaoa_cvar_delta_validation():
         )
 
 
-def create_svp_mixer(name_to_index, beta):
+def create_svp_mixer(name_to_index, beta, density_matrix=False):
     """
     Helper function to create a mixer circuit
 
@@ -485,7 +532,7 @@ def create_svp_mixer(name_to_index, beta):
         :class:`qibo.models.Circuit`: Mixer circuit
     """
     n = len(name_to_index)
-    mixer = Circuit(n, density_matrix=True)
+    mixer = Circuit(n, density_matrix=density_matrix)
     # Get the set of indices where it takes values 1; to help construct the mixer
     active_set = {
         value
@@ -617,7 +664,7 @@ def test_train_QAOA_svp_mixer_noise_model(gammas, betas, alphas, reg_loss, cvar_
 
     # SVP_mixers is now a list of functions that take beta and return a circuit
     svp_mixers = [
-        lambda beta, idx=idx: create_svp_mixer(name_to_index, beta)
+        lambda beta, idx=idx: create_svp_mixer(name_to_index, beta, density_matrix=True)
         for idx in range(len(betas))
     ]
 
@@ -630,11 +677,36 @@ def test_train_QAOA_svp_mixer_noise_model(gammas, betas, alphas, reg_loss, cvar_
         cvar_delta=cvar_delta,
         custom_mixer=svp_mixers,
         noise_model=noise_model,
+        density_matrix=True,
     )
     assert isinstance(result[0], float)
     assert isinstance(result[1], np.ndarray)
     assert isinstance(result[3], Circuit)
     assert isinstance(result[4], dict)
+
+
+@pytest.mark.parametrize(
+    "regular_loss, cvar_delta",
+    [
+        (True, None),
+        (False, 0.5),
+    ],
+)
+def test_train_qaoa_noise_model_requires_density_matrix(regular_loss, cvar_delta):
+    qp = QUBO(0, {(0, 0): 1.0})
+
+    noise_model = NoiseModel()
+    noise_model.add(DepolarizingError(0.05))
+
+    with pytest.raises(ValueError):
+        qp.train_QAOA(
+            gammas=[0.1],
+            betas=[0.2],
+            regular_loss=regular_loss,
+            cvar_delta=cvar_delta,
+            noise_model=noise_model,
+            density_matrix=False,
+        )
 
 
 def test_qubo_to_qaoa_object():
