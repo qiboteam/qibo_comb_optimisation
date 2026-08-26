@@ -4,6 +4,7 @@ import pytest
 from qibo.hamiltonians import SymbolicHamiltonian
 from qibo.models import QAOA
 from test_models_variational import assert_regression_fixture
+from enum import Enum
 
 from qiboopt.combinatorial.combinatorial import (
     MIS,

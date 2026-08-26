@@ -957,6 +957,384 @@ class QUBO:
             qaoa.set_parameters(np.array(params))
         return qaoa
 
+    def to_unified_qaoa(self, variant="standard", **kwargs):
+        """Create a :class:`UnifiedQAOA` from this QUBO.
+
+        Args:
+            variant (str): QAOA variant (``"standard"``, ``"xqaoa"``,
+                ``"lr"``, ``"ma"``).
+            **kwargs: Forwarded to :class:`UnifiedQAOA`.
+
+        Returns:
+            :class:`UnifiedQAOA`
+        """
+        return UnifiedQAOA(self, variant=variant, **kwargs)
+
+
+class MixerType(Enum):
+    """XQAOA mixer variant types."""
+
+    XY = "xy"  # Full XQAOA with RX + RY
+    X_EQUALS_Y = "x_equals_y"  # Constrained: alpha = beta
+    Y = "y"  # Pure Y-rotation: beta = 0
+    X = "x"  # Pure X-rotation: alpha = 0
+
+
+class ParameterType(Enum):
+    """MA-QAOA parameter type."""
+
+    PER_QUBIT = "per_qubit"
+    PER_EDGE = "per_edge"
+
+
+class UnifiedQAOA:
+    """Unified QAOA implementation supporting Standard, XQAOA, LR-QAOA, and MA-QAOA.
+
+    Takes a :class:`QUBO` instance and builds the corresponding QAOA circuit for
+    the chosen variant.
+
+    Args:
+        qubo (:class:`QUBO`): The QUBO problem instance.
+        variant (str): One of ``"standard"``, ``"xqaoa"``, ``"lr"``, ``"ma"``.
+        mixer_type (str, optional): For ``variant="xqaoa"``: ``"xy"``, ``"x_equals_y"``,
+            ``"y"``, or ``"x"``.
+        lr_variant (str, optional): For ``variant="lr"``: ``"standard"`` or ``"xqaoa"``.
+        ma_parameter_type (str, optional): For ``variant="ma"``: ``"per_qubit"`` or
+            ``"per_edge"``.
+        graph (optional): Graph with an ``edges`` attribute. Required for
+            ``ma_parameter_type="per_edge"``.
+        initial_state (:class:`qibo.models.Circuit`, optional): Circuit that prepares
+            the initial state.  When ``None`` (default), Hadamard gates on every qubit
+            are used.
+        custom_mixer: An optional callable or list of :class:`qibo.models.Circuit`.
+            If a single-element list, the same mixer is reused for every layer.
+            If its length equals the depth, each element is used for the corresponding
+            layer.
+
+    Example:
+        .. testcode::
+
+            from qiboopt.opt_class.opt_class import QUBO, UnifiedQAOA
+            import numpy as np
+
+            Qdict = {(0, 0): 1.0, (0, 1): 0.5, (1, 1): -1.0}
+            qp = QUBO(0, Qdict)
+
+            qaoa = UnifiedQAOA(qp, variant="standard")
+            params = np.random.rand(qaoa.get_param_count(depth=3)) * 2 * np.pi
+            circuit = qaoa.build_circuit(params, depth=3)
+    """
+
+    def __init__(
+        self,
+        qubo,
+        variant="standard",
+        mixer_type=None,
+        lr_variant=None,
+        ma_parameter_type=None,
+        graph=None,
+        initial_state=None,
+        custom_mixer=None,
+    ):
+        if not isinstance(qubo, QUBO):
+            raise_error(TypeError, "qubo must be an instance of QUBO.")
+
+        self.qubo = qubo
+        self.n = qubo.n
+        self.variant = variant.lower()
+        self.graph = graph
+        self.initial_state = initial_state
+        self.custom_mixer = custom_mixer
+
+        if self.variant == "xqaoa":
+            self.mixer_type = MixerType(mixer_type or "xy")
+        elif self.variant == "lr":
+            self.lr_variant = lr_variant or "standard"
+        elif self.variant == "ma":
+            self.ma_parameter_type = ParameterType(ma_parameter_type or "per_qubit")
+        elif self.variant != "standard":
+            raise_error(
+                ValueError,
+                f"Unknown variant '{self.variant}'. "
+                "Choose from 'standard', 'xqaoa', 'lr', 'ma'.",
+            )
+
+    # ------------------------------------------------------------------ #
+    #  Parameter helpers                                                  #
+    # ------------------------------------------------------------------ #
+
+    def get_param_count(self, depth):
+        """Return the number of optimisation parameters for a given *depth*.
+
+        Args:
+            depth (int): Number of QAOA layers.
+
+        Returns:
+            int: Total parameter count.
+        """
+        if self.variant == "standard":
+            return 2 * depth
+
+        if self.variant == "xqaoa":
+            return 3 * depth if self.mixer_type == MixerType.XY else 2 * depth
+
+        if self.variant == "lr":
+            return 3 if self.lr_variant == "xqaoa" else 2
+
+        if self.variant == "ma":
+            if self.ma_parameter_type == ParameterType.PER_QUBIT:
+                return depth * (1 + self.n)
+            if self.ma_parameter_type == ParameterType.PER_EDGE:
+                if self.graph is None:
+                    raise_error(ValueError, "Graph required for per-edge MA-QAOA.")
+                n_edges = (
+                    len(self.graph.edges)
+                    if hasattr(self.graph, "edges")
+                    else len(self.graph)
+                )
+                return depth * (1 + n_edges)
+
+    def unpack_parameters(self, flat_params, depth):
+        """Convert a flat parameter vector into a variant-specific dictionary.
+
+        Args:
+            flat_params (array-like): Flat parameter array.
+            depth (int): Circuit depth.
+
+        Returns:
+            dict: Keys are ``"gammas"``, ``"betas"``, and optionally ``"alphas"``.
+                  Values are :class:`numpy.ndarray`.
+        """
+        flat_params = np.asarray(flat_params, dtype=float)
+        expected = self.get_param_count(depth)
+        if len(flat_params) != expected:
+            raise_error(
+                ValueError,
+                f"Expected {expected} parameters, got {len(flat_params)}.",
+            )
+
+        p = {}
+
+        # --- Standard ---
+        if self.variant == "standard":
+            p["gammas"] = flat_params[:depth]
+            p["betas"] = flat_params[depth:]
+
+        # --- XQAOA ---
+        elif self.variant == "xqaoa":
+            if self.mixer_type == MixerType.XY:
+                p["gammas"] = flat_params[:depth]
+                p["betas"] = flat_params[depth : 2 * depth]
+                p["alphas"] = flat_params[2 * depth : 3 * depth]
+            elif self.mixer_type == MixerType.X_EQUALS_Y:
+                p["gammas"] = flat_params[:depth]
+                theta = flat_params[depth:]
+                p["betas"] = theta
+                p["alphas"] = theta.copy()
+            elif self.mixer_type == MixerType.Y:
+                p["gammas"] = flat_params[:depth]
+                p["alphas"] = flat_params[depth:]
+                p["betas"] = np.zeros(depth)
+            elif self.mixer_type == MixerType.X:
+                p["gammas"] = flat_params[:depth]
+                p["betas"] = flat_params[depth:]
+                p["alphas"] = np.zeros(depth)
+
+        # --- LR-QAOA ---
+        elif self.variant == "lr":
+            ramp = np.arange(1, depth + 1, dtype=float) / depth
+            if self.lr_variant == "xqaoa":
+                gamma_max, beta_max, alpha_max = flat_params
+                p["gammas"] = gamma_max * ramp
+                p["betas"] = beta_max * ramp
+                p["alphas"] = alpha_max * ramp
+            else:
+                gamma_max, beta_max = flat_params
+                p["gammas"] = gamma_max * ramp
+                p["betas"] = beta_max * ramp
+
+        # --- MA-QAOA ---
+        elif self.variant == "ma":
+            if self.ma_parameter_type == ParameterType.PER_QUBIT:
+                ppl = 1 + self.n
+                gammas, betas = [], []
+                for layer in range(depth):
+                    s = layer * ppl
+                    gammas.append(flat_params[s])
+                    betas.append(flat_params[s + 1 : s + ppl])
+                p["gammas"] = np.array(gammas)
+                p["betas"] = np.array(betas)  # shape (depth, n_qubits)
+            elif self.ma_parameter_type == ParameterType.PER_EDGE:
+                n_edges = (
+                    len(self.graph.edges)
+                    if hasattr(self.graph, "edges")
+                    else len(self.graph)
+                )
+                ppl = 1 + n_edges
+                gammas, betas = [], []
+                for layer in range(depth):
+                    s = layer * ppl
+                    gammas.append(flat_params[s])
+                    betas.append(flat_params[s + 1 : s + ppl])
+                p["gammas"] = np.array(gammas)
+                p["betas"] = np.array(betas)  # shape (depth, n_edges)
+
+        return p
+
+    # ------------------------------------------------------------------ #
+    #  Circuit building                                                   #
+    # ------------------------------------------------------------------ #
+
+    def _apply_initial_state(self, circuit):
+        """Prepend the initial-state preparation to *circuit*."""
+        if self.initial_state is not None:
+            circuit += self.initial_state
+        else:
+            circuit.add(gates.H(i) for i in range(self.n))
+
+    def _apply_phase_separation(self, circuit, gamma):
+        """Delegate to the QUBO's phase-separation routine."""
+        self.qubo._phase_separation(circuit, gamma)
+
+    def _apply_mixer(self, circuit, layer, param_dict, depth):
+        """Apply the mixer layer for the current *layer*.
+
+        Handles custom mixers, MA-QAOA per-qubit betas, and the standard /
+        XQAOA default mixer.
+        """
+        # --- custom mixer takes priority (except for MA-QAOA) ---
+        if self.custom_mixer is not None and self.variant != "ma":
+            betas = param_dict["betas"]
+            if len(self.custom_mixer) == 1:
+                mixer_circuit = self.custom_mixer[0]
+            elif len(self.custom_mixer) == depth:
+                mixer_circuit = self.custom_mixer[layer]
+            else:
+                raise_error(
+                    ValueError,
+                    f"custom_mixer length must be 1 or {depth}, "
+                    f"got {len(self.custom_mixer)}.",
+                )
+            # If the mixer is callable (takes betas), call it
+            if callable(mixer_circuit):
+                circuit += mixer_circuit(betas[layer : layer + 1])
+            else:
+                circuit += mixer_circuit
+            return
+
+        # --- MA-QAOA: per-qubit (or per-edge) betas ---
+        if self.variant == "ma":
+            if self.ma_parameter_type == ParameterType.PER_QUBIT:
+                layer_betas = param_dict["betas"][layer]  # shape (n_qubits,)
+                for i in range(self.n):
+                    circuit.add(gates.RX(i, 2 * layer_betas[i]))
+            elif self.ma_parameter_type == ParameterType.PER_EDGE:
+                # Apply RX with per-edge angle on the target qubit of each edge
+                layer_betas = param_dict["betas"][layer]
+                edge_list = (
+                    list(self.graph.edges)
+                    if hasattr(self.graph, "edges")
+                    else list(self.graph)
+                )
+                for idx, (u, v) in enumerate(edge_list):
+                    circuit.add(gates.RX(v, 2 * layer_betas[idx]))
+            return
+
+        # --- Standard / XQAOA / LR default mixer ---
+        beta = param_dict["betas"][layer]
+        alpha = param_dict.get("alphas")
+        alpha_val = alpha[layer] if alpha is not None else None
+
+        for i in range(self.n):
+            circuit.add(gates.RX(i, 2 * beta))
+            if alpha_val is not None and alpha_val != 0.0:
+                circuit.add(gates.RY(i, 2 * alpha_val))
+
+    def build_circuit(
+        self,
+        parameters,
+        depth,
+        include_measurements=True,
+        density_matrix=False,
+    ):
+        """Build the full QAOA circuit for the chosen variant.
+
+        Args:
+            parameters (array-like): Flat parameter vector whose length must
+                match :meth:`get_param_count(depth)`.
+            depth (int): Number of QAOA layers.
+            include_measurements (bool): Append measurement gates. Defaults
+                to ``True``.
+            density_matrix (bool): Use density-matrix simulation mode.
+                Defaults to ``False``.
+
+        Returns:
+            :class:`qibo.models.Circuit`: The constructed circuit.
+        """
+        param_dict = self.unpack_parameters(parameters, depth)
+
+        circuit = Circuit(self.n, density_matrix=density_matrix)
+
+        # Initial state
+        self._apply_initial_state(circuit)
+
+        # QAOA layers
+        for layer in range(depth):
+            self._apply_phase_separation(circuit, param_dict["gammas"][layer])
+            self._apply_mixer(circuit, layer, param_dict, depth)
+
+        if include_measurements:
+            circuit.add(gates.M(i) for i in range(self.n))
+
+        return circuit
+
+
+    def random_parameters(self, depth, seed=None):
+        """Sample a random parameter vector uniformly in :math:`[0, 2\\pi)`.
+        Args:
+            depth (int): Number of QAOA layers.
+            seed (int, optional): Random seed.
+        Returns:
+            numpy.ndarray: Random parameter vector.
+        """
+        rng = np.random.default_rng(seed)
+        return rng.uniform(0, 2 * np.pi, size=self.get_param_count(depth))
+
+    def summary(self, depth):
+        """Return a human-readable summary of the configuration.
+
+        Args:
+            depth (int): Circuit depth.
+
+        Returns:
+            str
+        """
+        lines = [
+            "UnifiedQAOA Configuration",
+            "=" * 50,
+            f"Variant           : {self.variant}",
+            f"Number of qubits  : {self.n}",
+            f"Circuit depth     : {depth}",
+            f"Total parameters  : {self.get_param_count(depth)}",
+            f"Custom initial st.: {self.initial_state is not None}",
+            f"Custom mixer      : {self.custom_mixer is not None}",
+        ]
+        if self.variant == "xqaoa":
+            lines.append(f"Mixer type        : {self.mixer_type.value}")
+        elif self.variant == "lr":
+            lines.append(f"LR base variant   : {self.lr_variant}")
+            lines.append("Note: parameter count is independent of depth!")
+        elif self.variant == "ma":
+            lines.append(f"MA parameter type : {self.ma_parameter_type.value}")
+            if self.ma_parameter_type == ParameterType.PER_EDGE:
+                n_edges = (
+                    len(self.graph.edges)
+                    if hasattr(self.graph, "edges")
+                    else len(self.graph)
+                )
+                lines.append(f"Number of edges   : {n_edges}")
+        return "\n".join(lines)
+
 
 class LinearProblem:
     """Initializes a ``LinearProblem`` class, which represents a linear problem of the form :math:`Ax + b`. The
