@@ -3857,4 +3857,4 @@ qiboml = ["qiboml", "torch"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.14"
-content-hash = "3fcf926b1c0cf00d701d6cf30d06c47c1c221c078fa3b59c7717e1ba039427b0"
+content-hash = "98fb049e973393ca98fe830da1c6019a68558c6fc993924359c1240320cc3833"

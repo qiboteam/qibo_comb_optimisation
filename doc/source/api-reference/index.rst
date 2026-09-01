@@ -7,3 +7,4 @@ API Reference
 
     combinatorial
     opt_class
+    dqi

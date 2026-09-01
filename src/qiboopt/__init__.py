@@ -5,4 +5,4 @@ try:
 except im.PackageNotFoundError:
     __version__ = "0.0.1"
 
-from . import combinatorial, integrations, opt_class
+from . import combinatorial, dqi, integrations, opt_class
