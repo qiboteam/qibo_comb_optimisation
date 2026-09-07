@@ -11,6 +11,7 @@ from qibo.quantum_info import infidelity
 
 from qiboopt.opt_class.opt_class import (
     QUBO,
+    UnifiedQAOA,
     LinearProblem,
     variable_dict_to_ind_dict,
     variable_to_ind,
@@ -929,3 +930,163 @@ def test_variable_to_ind_round_trip():
 
     assert var_to_idx == {"x1": 0, "x2": 1, "x3": 2}
     assert idx_to_var == {0: "x1", 1: "x2", 2: "x3"}
+
+
+def test_qubo_to_unified_qaoa_returns_unified_instance():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0, (0, 1): 0.5})
+    uqaoa = qubo.to_unified_qaoa()
+    assert isinstance(uqaoa, UnifiedQAOA)
+    assert uqaoa.qubo is qubo
+    assert uqaoa.variant == "standard"
+
+
+@pytest.mark.parametrize(
+    "variant,mixer_type,lr_variant,ma_parameter_type,depth,expected",
+    [
+        ("standard", None, None, None, 3, 6),
+        ("xqaoa", "xy", None, None, 3, 9),
+        ("xqaoa", "x_equals_y", None, None, 3, 6),
+        ("xqaoa", "y", None, None, 3, 6),
+        ("xqaoa", "x", None, None, 3, 6),
+        ("lr", None, "standard", None, 3, 2),
+        ("lr", None, "xqaoa", None, 3, 3),
+        ("ma", None, None, "per_qubit", 3, 9),
+    ],
+)
+def test_unified_qaoa_get_param_count(
+    variant, mixer_type, lr_variant, ma_parameter_type, depth, expected
+):
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    uqaoa = UnifiedQAOA(
+        qubo,
+        variant=variant,
+        mixer_type=mixer_type,
+        lr_variant=lr_variant,
+        ma_parameter_type=ma_parameter_type,
+    )
+    assert uqaoa.get_param_count(depth) == expected
+
+
+def test_unified_qaoa_unpack_parameters_standard():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    uqaoa = UnifiedQAOA(qubo, variant="standard")
+    params = np.array([0.1, 0.2, 0.3, 0.4])
+    unpacked = uqaoa.unpack_parameters(params, depth=2)
+    assert np.allclose(unpacked["gammas"], [0.1, 0.3])
+    assert np.allclose(unpacked["betas"], [0.2, 0.4])
+
+
+def test_unified_qaoa_unpack_parameters_xqaoa_xy():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    uqaoa = UnifiedQAOA(qubo, variant="xqaoa", mixer_type="xy")
+    params = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    unpacked = uqaoa.unpack_parameters(params, depth=2)
+    assert np.allclose(unpacked["gammas"], [0.1, 0.4])
+    assert np.allclose(unpacked["betas"], [0.2, 0.5])
+    assert np.allclose(unpacked["alphas"], [0.3, 0.6])
+
+
+def test_unified_qaoa_unpack_parameters_lr():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    uqaoa = UnifiedQAOA(qubo, variant="lr", lr_variant="standard")
+    unpacked = uqaoa.unpack_parameters(np.array([1.0, 2.0]), depth=4)
+    assert np.allclose(unpacked["gammas"], [0.25, 0.5, 0.75, 1.0])
+    assert np.allclose(unpacked["betas"], [0.5, 1.0, 1.5, 2.0])
+
+
+def test_unified_qaoa_unpack_parameters_ma_per_qubit():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    uqaoa = UnifiedQAOA(qubo, variant="ma", ma_parameter_type="per_qubit")
+    params = np.array([0.1, 1.0, 2.0, 0.2, 3.0, 4.0])
+    unpacked = uqaoa.unpack_parameters(params, depth=2)
+    assert np.allclose(unpacked["gammas"], [0.1, 0.2])
+    assert unpacked["betas"].shape == (2, 2)
+    assert np.allclose(unpacked["betas"][0], [1.0, 2.0])
+    assert np.allclose(unpacked["betas"][1], [3.0, 4.0])
+
+
+def test_unified_qaoa_build_circuit_standard_matches_legacy():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0, (0, 1): 0.5})
+    params = [0.1, 0.2, 0.3, 0.4]
+
+    legacy = qubo.qubo_to_qaoa_circuit(gammas=[0.1, 0.3], betas=[0.2, 0.4])
+    uqaoa = qubo.to_unified_qaoa("standard")
+    unified = uqaoa.build_circuit(params, depth=2)
+
+    assert isinstance(unified, Circuit)
+    assert unified.nqubits == legacy.nqubits
+    assert len(unified.queue) == len(legacy.queue)
+
+
+def test_unified_qaoa_custom_initial_state():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+    init = Circuit(2)
+    init.add(gates.X(0))
+    uqaoa = UnifiedQAOA(qubo, variant="standard", initial_state=init)
+
+    circuit = uqaoa.build_circuit([0.1, 0.2, 0.3, 0.4], depth=2, include_measurements=False)
+    assert isinstance(circuit, Circuit)
+    assert circuit.nqubits == 2
+    assert len(circuit.queue) >= len(init.queue)
+
+
+def test_unified_qaoa_custom_mixer_callable():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): -1.0})
+
+    def mixer(beta):
+        circ = Circuit(2)
+        circ.add(gates.RY(0, beta))
+        circ.add(gates.RY(1, beta))
+        return circ
+
+    uqaoa = UnifiedQAOA(qubo, variant="standard", custom_mixer=[mixer])
+    circuit = uqaoa.build_circuit([0.1, 0.2], depth=1, include_measurements=False)
+    assert isinstance(circuit, Circuit)
+
+
+@pytest.mark.parametrize("nshots", [None, 0])
+def test_unified_qaoa_train_exact_mode_returns_probabilities(nshots):
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): 1.0})
+    uqaoa = qubo.to_unified_qaoa("standard")
+    best, params, extra, circuit, stats = uqaoa.train(
+        gammas=[0.1, 0.2],
+        betas=[0.3, 0.4],
+        nshots=nshots,
+        regular_loss=True,
+        maxiter=2,
+        engine="legacy",
+    )
+    assert np.isfinite(best)
+    assert isinstance(params, np.ndarray)
+    assert isinstance(extra, dict)
+    assert isinstance(circuit, Circuit)
+    assert isinstance(stats, dict)
+    assert all(isinstance(v, float) for v in stats.values())
+
+
+def test_unified_qaoa_train_cvar_mode_runs():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): 1.0})
+    uqaoa = qubo.to_unified_qaoa("standard")
+    best, params, extra, circuit, stats = uqaoa.train(
+        gammas=[0.1, 0.2],
+        betas=[0.3, 0.4],
+        nshots=20,
+        regular_loss=False,
+        cvar_delta=0.5,
+        maxiter=2,
+        engine="legacy",
+    )
+    assert np.isfinite(best)
+    assert isinstance(params, np.ndarray)
+    assert isinstance(extra, dict)
+    assert isinstance(circuit, Circuit)
+    assert isinstance(stats, dict)
+
+
+def test_train_qaoa_still_works_as_wrapper():
+    qubo = QUBO(0, {(0, 0): 1.0, (1, 1): 1.0})
+    result = qubo.train_QAOA(gammas=[0.1, 0.2], betas=[0.3, 0.4], maxiter=2)
+    assert isinstance(result[0], float)
+    assert isinstance(result[1], np.ndarray)
+    assert isinstance(result[3], Circuit)
+    assert isinstance(result[4], dict)
